@@ -9,6 +9,7 @@ def return_vocabulary(csv="cleaned_smiles.csv"):
     except KeyError:
         clean_smiles = pd.read_csv('250k_rndm_zinc_drugs_clean_3.csv').iloc[:, 0].values  # Use first column
     char_to_idx, idx_to_char = create_vocabulary(clean_smiles)
+    return char_to_idx, idx_to_char
 
 def create_vocabulary(smiles_data):
     """Create character vocabulary from SMILES strings"""
@@ -50,5 +51,5 @@ def get_optimized_variants(protien_sequence,optimized_compounds,optimizer,optimi
     sorted_variants = sorted(optimized_variants, key=lambda x: x['score'], reverse=True)
     variant_optimizer.export_results(sorted_variants, "optimized_variants.csv")
     explanation = variant_optimizer.explain_results_with_gemini(sorted_variants)
-    
+
     return sorted_variants, explanation

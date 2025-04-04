@@ -9,9 +9,8 @@ import torch
 
 app = Flask(__name__)
 
-
-@app.route("/api/optimize")
-def find_optimized_candidates(request):
+@app.route("/api/optimize", methods=["POST"])
+def find_optimized_candidates():
   """
   Endpoint to find optimized drug candidates based on input protein and SMILES data.
   Input: target protein (can be either amino acid sequence or PDB ID), weights for optimization metrics should be like 
@@ -103,7 +102,23 @@ def find_optimized_candidates(request):
   explanation = optimizer.explain_results_with_gemini(optimized_compounds)
   optimized_variants, variants_explanation = get_optimized_variants(protein_sequence,optimized_compounds,optimizer,optimization_params)
   
-  return optimized_compounds, explanation, optimized_variants, variants_explanation
+  # Read the exported CSV instead of using the objects directly
+  serialized_compounds = pd.read_csv("optimized_drug_candidates.csv").to_dict(orient="records")
+
+# For optimized_variants, either export to CSV first or create a serializable version
+  if optimized_variants:
+    # Option 1: Export variants to CSV and read back
+    optimizer.export_results(optimized_variants, "optimized_variants.csv")
+    serialized_variants = pd.read_csv("optimized_variants.csv").to_dict(orient="records")
+  else:
+    serialized_variants = []
+
+  return jsonify({
+    "optimized_compounds": serialized_compounds,
+    "explanation": explanation,
+    "optimized_variants": serialized_variants,
+    "variants_explanation": variants_explanation
+})
   #TODO Call visualization function
 
 
