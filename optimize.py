@@ -835,11 +835,11 @@ class DrugOptimizer:
         except:
             return False
     
-    def visualize_molecules(self, compounds: List[Dict]) -> None:
-        """
+    """def visualize_molecules(self, compounds: List[Dict]) -> None:
+        
         Generate visualization for top compounds
         In a real implementation, this would connect to IDX for 3D visualization
-        """
+        
         # This is a placeholder for visualization logic
         print("Generating visualizations for top compounds...")
         
@@ -855,7 +855,7 @@ class DrugOptimizer:
             
             print(f"Compound {i+1}: {smiles}")
             print(f"Score: {score:.4f}")
-            print("---")
+            print("---")"""
     
     def explain_results_with_gemini(self, compounds: List[Dict]) -> str:
         """
