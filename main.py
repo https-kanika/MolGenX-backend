@@ -8,6 +8,7 @@ import numpy as np
 from RnnClass import RNNGenerator, generate_diverse_molecules
 from utils import return_vocabulary, get_pdb_id_from_sequence
 import torch
+from visualization import visualize_simple
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080", "supports_credentials": True}})
@@ -99,6 +100,10 @@ def find_optimized_candidates():
     serialized_variants = pd.read_csv("optimized_variants.csv").to_json(orient="records")
   else:
     serialized_variants = []
+
+  visualize_simple(optimized_compounds, show_protein=False, pdb_id=pdb_id)
+  visualize_simple(optimized_variants, show_protein=False, pdb_id=pdb_id)
+    
 
   return jsonify({
     "optimized_compounds": serialized_compounds,
