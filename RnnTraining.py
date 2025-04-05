@@ -5,8 +5,8 @@ from tqdm import tqdm
 from RnnClass import RNNGenerator
 from utils import return_vocabulary
 from data_cleaning import preprocess_smiles
-
-
+import pandas as pd
+import numpy as np
 
 clean_smiles=[]
 smiles=pd.read_csv('250k_rndm_zinc_drugs_clean_3.csv')
