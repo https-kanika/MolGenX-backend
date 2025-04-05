@@ -6,7 +6,7 @@ from optimize import DrugOptimizer, get_optimized_variants
 import pandas as pd
 import numpy as np
 from RnnClass import RNNGenerator, generate_diverse_molecules
-from utils import return_vocabulary, get_pdb_id_from_sequence
+from utils import return_vocabulary
 import torch
 from visualization import visualize_simple
 
@@ -115,4 +115,4 @@ def find_optimized_candidates():
 
 
 if __name__ == "__main__":
-  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 3000)))
+  app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
