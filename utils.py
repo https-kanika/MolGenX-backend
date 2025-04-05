@@ -1,7 +1,6 @@
 from rdkit import Chem
 import numpy as np
 import pandas as pd
-from optimize import DrugOptimizer
 
 def return_vocabulary(csv="cleaned_smiles.csv"):
     try:
@@ -39,17 +38,80 @@ def validate_molecule(smiles: str) -> bool:
     except:
         return False
     
-
-def get_optimized_variants(protien_sequence,optimized_compounds,optimizer,optimization_params):
-    top_compound = optimized_compounds[0]['smiles']
+def get_pdb_id_from_sequence(sequence):
+    """
+    Get a PDB ID for a protein sequence by searching the PDB database
+    
+    Args:
+        sequence: Amino acid sequence
         
-    variants = optimizer.generate_molecular_modifications(top_compound, 50)
-    print(f"Generated {len(variants)} variants of top compound")
-
-    variant_optimizer = DrugOptimizer(variants, protien_sequence)  
-    optimized_variants = variant_optimizer.optimize(optimization_params)
-    sorted_variants = sorted(optimized_variants, key=lambda x: x['score'], reverse=True)
-    variant_optimizer.export_results(sorted_variants, "optimized_variants.csv")
-    explanation = variant_optimizer.explain_results_with_gemini(sorted_variants)
-
-    return sorted_variants, explanation
+    Returns:
+        str: PDB ID if found, None otherwise
+    """
+    try:
+        import requests
+        
+        # Using NCBI BLAST REST API to search against PDB
+        url = "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
+        
+        # First submit the search
+        params = {
+            'PROGRAM': 'blastp',
+            'DATABASE': 'pdb',
+            'QUERY': sequence,
+            'CMD': 'Put',
+            'FORMAT_TYPE': 'JSON2'
+        }
+        
+        print("Submitting sequence to BLAST...")
+        response = requests.post(url, data=params)
+        
+        # Extract RID (Request ID) from the response
+        import re
+        rid_match = re.search(r'RID = (.*)', response.text)
+        if not rid_match:
+            print("Could not get BLAST request ID")
+            return None
+            
+        rid = rid_match.group(1).strip()
+        print(f"BLAST search submitted with ID: {rid}")
+        
+        # Wait for results (polling)
+        import time
+        params = {
+            'CMD': 'Get',
+            'RID': rid,
+            'FORMAT_TYPE': 'JSON2'
+        }
+        
+        max_tries = 30
+        for i in range(max_tries):
+            time.sleep(10)  # Wait 10 seconds between checks
+            print(f"Checking BLAST results (attempt {i+1}/{max_tries})...")
+            response = requests.get(url, params=params)
+            
+            if "Status=READY" in response.text:
+                print("BLAST search completed")
+                break
+                
+        # Parse the results
+        if "Status=READY" in response.text:
+            results_match = re.search(r'<Iteration_hits>(.*?)</Iteration_hits>', response.text, re.DOTALL)
+            if results_match:
+                hits_text = results_match.group(1)
+                
+                # Extract PDB IDs from hits
+                pdb_id_matches = re.findall(r'<Hit_id>(pdb\|([a-zA-Z0-9]+))</Hit_id>', hits_text)
+                
+                if pdb_id_matches:
+                    # Return the first (best) match
+                    pdb_id = pdb_id_matches[0][1].lower()
+                    print(f"Found matching PDB ID: {pdb_id}")
+                    return pdb_id
+        
+        print("No matching PDB structures found")
+        return None
+        
+    except Exception as e:
+        print(f"Error searching for PDB ID: {str(e)}")
+        return None

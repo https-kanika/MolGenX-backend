@@ -7,6 +7,7 @@ import requests
 
 def visualize_simple(compounds, show_protein=True,pdb_id=None):
     output_dir = "compound_visualizations"
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
             
@@ -119,18 +120,18 @@ def visualize_simple(compounds, show_protein=True,pdb_id=None):
         print(f"Grid visualization saved as '{grid_filename}'")
     
     # Show the target protein (if requested)
-    if show_protein and len(compounds) > 0:
+    if show_protein:
         try:
            
             pdb_url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
             response = requests.get(pdb_url)
             
             if response.status_code == 200:
-                protein_pdb_filename = f"{output_dir}/target_protein_EGFR.pdb"
+                protein_pdb_filename = f"{output_dir}/target_protein.pdb"
                 with open(protein_pdb_filename, 'w') as f:
                     f.write(response.text)
                 print(f"Protein structure saved as PDB: '{protein_pdb_filename}'")
-                protein_html_filename = f"{output_dir}/target_protein_EGFR_viewer.html"
+                protein_html_filename = f"{output_dir}/target_protein.html"
                 protein_html_content = f"""
 <!DOCTYPE html>
 <html>

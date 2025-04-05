@@ -1,10 +1,10 @@
 import os
 from flask import Flask, request, jsonify
 import requests
-from optimize import DrugOptimizer
+from optimize import DrugOptimizer, get_optimized_variants
 import pandas as pd
 from RnnClass import RNNGenerator, generate_diverse_molecules
-from utils import return_vocabulary,get_optimized_variants
+from utils import return_vocabulary, get_pdb_id_from_sequence
 import torch
 
 app = Flask(__name__)
@@ -25,19 +25,18 @@ def find_optimized_candidates():
   """
   if not request.json or 'protein' not in request.json:
     return jsonify({"error": "Missing protein data"}), 400
-    
-  protein_input = request.json['protein']
   
-  # Check if input is a PDB ID (typically 4 characters, alphanumeric)
-  is_pdb_id = len(protein_input) == 4 and protein_input[0].isdigit() and protein_input[1:].isalnum()
   
-  if is_pdb_id:
+  pdb_id= request.json.get('pdb_id')
+  protein_input = request.json.get('protein', None)
+
+  if protein_input== None:
     try:
-      pdb_url = f"https://data.rcsb.org/rest/v1/core/entry/{protein_input}"
+      pdb_url = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
       pdb_response = requests.get(pdb_url)
       pdb_response.raise_for_status()
       
-      sequence_url = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{protein_input}/1"
+      sequence_url = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/1"
       sequence_response = requests.get(sequence_url)
       sequence_response.raise_for_status()
 
@@ -50,6 +49,7 @@ def find_optimized_candidates():
       return jsonify({"error": f"Failed to fetch sequence for PDB ID {protein_input}: {str(e)}"}), 400
   else:
     protein_sequence = protein_input
+
   
   char_to_idx, idx_to_char = return_vocabulary()
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,26 +65,12 @@ def find_optimized_candidates():
         num_molecules=5
     )
 
-  print("Generated Molecules:")
-  for mol in diverse_molecules:
-    print(mol)
   
-  optimizer = DrugOptimizer(diverse_molecules, protein_sequence)
-  #ibuprofen_mol = Chem.MolFromSmiles('CC(C)CC1=CC=C(C=C1)C(C)C(=O)O')
-  #optimizer.predict_toxicity(ibuprofen_mol)
-  #optimizer.predict_protein_structure()
-    
-  # Calculate metrics for the ibuprofen molecule
-  #ibuprofen_metrics = optimizer.calculate_all_metrics(ibuprofen_mol)
-
-  ## Create the compound in the expected format (list of dictionaries)
-  #ibuprofen_compound = [{'smiles': Chem.MolToSmiles(ibuprofen_mol),molecule': ibuprofen_mol,'score': 0.5,  # Sample score, you might calculate this properly'metrics': ibuprofen_metrics}]
-
-  # Now call explain_results_with_gemini with properly formatted input
-  #optimizer.explain_results_with_gemini(ibuprofen_compound)
-  #optimizer.visualize_molecules(ibuprofen_compound)
-  # Define optimization parameters
-
+  #print("Generated Molecules:")
+  #for mol in diverse_molecules:
+    #print(mol)
+  
+  optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
   weights =request.json['weights']
   optimization_params = {
         'weights': weights,

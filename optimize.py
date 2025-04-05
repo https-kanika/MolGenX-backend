@@ -11,6 +11,10 @@ import re
 import random
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModel
 from transformers import GPT2LMHeadModel, PreTrainedTokenizerFast
+from diffdock import call_diffdock_api
+import os
+from visualization import visualize_simple
+from utils import get_pdb_id_from_sequence
 
 class DrugOptimizer:
     #TODO WRITE DOC STRINGS TO GENERATE README
@@ -19,7 +23,7 @@ class DrugOptimizer:
     multiple objectives, ESM-2 for protein interaction, etc.
     """
     
-    def __init__(self, candidate_smiles: List[str], target_protein: Optional[str] = None):
+    def __init__(self, candidate_smiles: List[str], target_protein: Optional[str] = None, pdb_id: Optional[str] = None):    
         """
         Initialize the DrugOptimizer with a list of candidate SMILES and optionally a target protein.
         
@@ -33,6 +37,7 @@ class DrugOptimizer:
         self.valid_indices = [i for i, mol in enumerate(self.mols) if mol is not None]
         self.valid_smiles = [candidate_smiles[i] for i in self.valid_indices]
         self.metrics_cache = {}
+        self.pdb_id = pdb_id
 
     def predict_protein_structure(self):
         """Predict structure information for the target protein using ESM-2"""
@@ -40,12 +45,12 @@ class DrugOptimizer:
             return None
     
         try:
-            print("Loading ESM-2 model...")
+            #print("Loading ESM-2 model...")
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
             model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
             # Process only the first 1000 amino acids to avoid memory issues
             protein_seq = self.target_protein[:1000]
-            print(f"Processing protein sequence (length: {len(protein_seq)})")
+            #print(f"Processing protein sequence (length: {len(protein_seq)})")
         
             inputs = tokenizer(protein_seq, return_tensors="pt")
         
@@ -58,7 +63,7 @@ class DrugOptimizer:
                 # Mean pool over sequence length (excluding special tokens)
                 sequence_embeddings = embeddings[:, 1:-1].mean(dim=1)
             
-                print(f"Generated protein embeddings with shape: {sequence_embeddings.shape}")
+                #print(f"Generated protein embeddings with shape: {sequence_embeddings.shape}")
             
             return sequence_embeddings
     
@@ -114,7 +119,7 @@ class DrugOptimizer:
         
         try:
             smiles = Chem.MolToSmiles(mol)
-            print(f"Analyzing toxicity for SMILES: {smiles}")
+            #print(f"Analyzing toxicity for SMILES: {smiles}")
             
             model = AutoModel.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
                                             deterministic_eval=True, 
@@ -159,7 +164,7 @@ class DrugOptimizer:
             
             # Apply sigmoid function to normalize to 0-1 range
             embedding_toxicity_score = 1.0 / (1.0 + np.exp(-embedding_toxicity_contribution))
-            print(f"Embedding-based toxicity: {embedding_toxicity_score:.4f}")
+            #print(f"Embedding-based toxicity: {embedding_toxicity_score:.4f}")
             
             # 6. Combine all scores: structural alerts, PAINS, ring count, and embeddings
             toxicity_score = (
@@ -169,7 +174,7 @@ class DrugOptimizer:
                 0.3 * embedding_toxicity_score      # Embedding-based contribution
             )
             
-            print(f"Final toxicity score: {toxicity_score:.4f}")
+            #print(f"Final toxicity score: {toxicity_score:.4f}")
             return min(1.0, max(0.0, toxicity_score))
             
         except Exception as e:
@@ -195,7 +200,7 @@ class DrugOptimizer:
                 
                 # Extract pattern IDs for reporting
                 pattern_ids = [match.GetDescription() for match in matches]
-                print(f"PAINS patterns found: {pattern_ids}")
+                #print(f"PAINS patterns found: {pattern_ids}")
                 
                 # Return normalized score - cap at 3 patterns
                 return min(num_matches / 3.0, 1.0)
@@ -255,23 +260,43 @@ class DrugOptimizer:
     
     def estimate_binding_affinity(self, mol) -> float:
         """Estimate binding affinity using BioNeMo's DiffDock model"""
-        if not mol or not self.target_protein or not hasattr(self, 'diffdock_predictor'):
-            return self._fallback_binding_estimate(mol)
-    
         try:
             smiles = Chem.MolToSmiles(mol)
+            if not hasattr(self, 'target_protein_file') or not self.target_protein_file:
+            # Specify PDB ID for the protein target
 
-            inputs = {
-            "ligand": smiles,
-            "protein_sequence": self.target_protein
-            }
-        
-            results = self.diffdock_predictor.predict(inputs)
+                pdb_id=self.pdb_id
+                # Create a temporary compound list to use with visualize_simple
+                temp_compound = [{
+                    'molecule': mol,
+                    'smiles': smiles,
+                    'score': 0.0,
+                    'metrics': {}
+                }]
+                
+                output_dir = "compound_visualizations"
+                visualize_simple(temp_compound, show_protein=True, pdb_id=pdb_id)
+                
+                self.target_protein_file = f"{output_dir}/target_protein.pdb"
+                
+                if not os.path.exists(self.target_protein_file):
+                    print(f"PDB file not found at {self.target_protein_file}. Using fallback method.")
+                    return self._fallback_binding_estimate(mol)
+            pdb_id=self.pdb_id
+            
+            results = call_diffdock_api(
+            input_structure=pdb_id,  # Protein ID or name
+            input_pdb=self.target_protein_file,                  # Path to PDB file
+            smiles_string=smiles,                 # SMILES string
+            input_ligand=None,                    # No ligand file
+            num_inference_steps=10,
+            num_samples=10,
+            actual_inference_steps=10,
+            no_final_step_noise=True
+            )
 
-            binding_score = results.get("binding_score", 0.0)
-        
-        # Convert to normalized score between 0 and 1
-        # DiffDock typically returns lower values for better binding
+            binding_score = results.get("binding_score", 0.0)   
+            # DiffDock typically returns lower values for better binding
             normalized_score = 1.0 / (1.0 + np.exp(binding_score))
         
             return normalized_score
@@ -347,7 +372,7 @@ class DrugOptimizer:
         }
 
         self.metrics_cache[smiles] = metrics
-        print(metrics)
+        #print(metrics)
         return metrics
     
     def calculate_objective_score(self, mol, weights: Dict[str, float]) -> float:
@@ -903,7 +928,7 @@ class DrugOptimizer:
         text = response.json()['candidates'][0]['content']['parts'][0]['text']
         text_with_new_lines = text.replace('\\n', '\n')
         cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
-        print(cleaned_text)
+        #print(cleaned_text)
         return cleaned_text
 
     
@@ -928,3 +953,18 @@ class DrugOptimizer:
         df = pd.DataFrame(data)
         df.to_csv(filepath, index=False)
         print(f"Results exported to {filepath}")
+
+
+def get_optimized_variants(protien_sequence,optimized_compounds,optimizer,optimization_params):
+    top_compound = optimized_compounds[0]['smiles']
+        
+    variants = optimizer.generate_molecular_modifications(top_compound, 50)
+    #print(f"Generated {len(variants)} variants of top compound")
+
+    variant_optimizer = DrugOptimizer(variants, protien_sequence)  
+    optimized_variants = variant_optimizer.optimize(optimization_params)
+    sorted_variants = sorted(optimized_variants, key=lambda x: x['score'], reverse=True)
+    variant_optimizer.export_results(sorted_variants, "optimized_variants.csv")
+    explanation = variant_optimizer.explain_results_with_gemini(sorted_variants)
+
+    return sorted_variants, explanation
