@@ -16,6 +16,16 @@ import os
 from visualization import visualize_simple
 from utils import get_pdb_id_from_sequence
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.number):
+            return float(obj) if isinstance(obj, np.floating) else int(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif str(type(obj)) == "<class 'rdkit.Chem.rdchem.Mol'>":
+            return Chem.MolToSmiles(obj)
+        return super(NumpyEncoder, self).default(obj)
+
 class DrugOptimizer:
     #TODO WRITE DOC STRINGS TO GENERATE README
     """
@@ -902,13 +912,13 @@ class DrugOptimizer:
             compound_data.append({
                 "rank": i+1,
                 "smiles": compound['smiles'],
-                "score": compound['score'],
-                "druglikeness": compound['metrics']['druglikeness'],
-                "toxicity": compound['metrics']['toxicity'],
-                "binding_affinity": compound['metrics']['binding_affinity'],
-                "solubility": compound['metrics']['solubility'],
-                "lipinski_violations": compound['metrics']['lipinski_violations'],
-                "synthetic_accessibility": compound['metrics']['synthetic_accessibility']
+                "score": float(compound['score']),  # Convert to standard Python float
+                "druglikeness": float(compound['metrics']['druglikeness']),
+                "toxicity": float(compound['metrics']['toxicity']),
+                "binding_affinity": float(compound['metrics']['binding_affinity']),
+                "solubility": float(compound['metrics']['solubility']),
+                "lipinski_violations": int(compound['metrics']['lipinski_violations']),
+                "synthetic_accessibility": float(compound['metrics']['synthetic_accessibility'])
             })
 
         url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCdvbELo9_WNP4ti4wogC5TAjDRL16PmFQ'
@@ -922,7 +932,7 @@ class DrugOptimizer:
                     "parts": [
                         {
                             "text": f"""Explain the following optimized drug candidates in simple terms:
-                                    {json.dumps(compound_data, indent=2)}
+                                    {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
                                     
                                     Focus on:
                                     1. Why these compounds might be promising drug candidates
@@ -939,7 +949,6 @@ class DrugOptimizer:
         text = response.json()['candidates'][0]['content']['parts'][0]['text']
         text_with_new_lines = text.replace('\\n', '\n')
         cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
-        #print(cleaned_text)
         return cleaned_text
 
     
