@@ -1,13 +1,16 @@
 import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 from optimize import DrugOptimizer
 import pandas as pd
+import numpy as np
 from RnnClass import RNNGenerator, generate_diverse_molecules
 from utils import return_vocabulary,get_optimized_variants
 import torch
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080", "supports_credentials": True}})
 
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
