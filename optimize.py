@@ -262,42 +262,53 @@ class DrugOptimizer:
         """Estimate binding affinity using BioNeMo's DiffDock model"""
         try:
             smiles = Chem.MolToSmiles(mol)
-            if not hasattr(self, 'target_protein_file') or not self.target_protein_file:
-            # Specify PDB ID for the protein target
-
-                pdb_id=self.pdb_id
-                # Create a temporary compound list to use with visualize_simple
-                temp_compound = [{
+            temp_compound = [{
                     'molecule': mol,
                     'smiles': smiles,
                     'score': 0.0,
                     'metrics': {}
                 }]
+            output_dir = "compound_visualizations"
+            if not hasattr(self, 'target_protein_file') or not self.target_protein_file:
+            # Specify PDB ID for the protein target
+
+                pdb_id=self.pdb_id
+                # Create a temporary compound list to use with visualize_simple
                 
-                output_dir = "compound_visualizations"
+                
+                
                 visualize_simple(temp_compound, show_protein=True, pdb_id=pdb_id)
                 
-                self.target_protein_file = f"{output_dir}/target_protein.pdb"
+                self.target_protein_file = f"{output_dir}\\target_protein.pdb"
                 
                 if not os.path.exists(self.target_protein_file):
                     print(f"PDB file not found at {self.target_protein_file}. Using fallback method.")
                     return self._fallback_binding_estimate(mol)
-            pdb_id=self.pdb_id
+            protien_pdb_id=self.pdb_id
+
             
+            visualize_simple(temp_compound, show_protein=False, pdb_id=protien_pdb_id)
+            ligand_file = f"{output_dir}\\compound_1_3D.pdb"
+
+            file_path = "target_protein.pdb.zip"
+            if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print("File deleted successfully.")
             results = call_diffdock_api(
-            input_structure=pdb_id,  # Protein ID or name
-            input_pdb=self.target_protein_file,                  # Path to PDB file
-            smiles_string=smiles,                 # SMILES string
-            input_ligand=None,                    # No ligand file
+            input_structure=protien_pdb_id,  # Protein ID or name
+            input_pdb=self.target_protein_file, 
+            input_ligand=ligand_file,                 # Path to PDB file
+            smiles_string=smiles,                 # SMILES string                   # No ligand file
             num_inference_steps=10,
             num_samples=10,
             actual_inference_steps=10,
             no_final_step_noise=True
             )
 
-            binding_score = results.get("binding_score", 0.0)   
+            binding_score = results
+
             # DiffDock typically returns lower values for better binding
-            normalized_score = 1.0 / (1.0 + np.exp(binding_score))
+            normalized_score = 1.0 / (1.0 + np.exp(float(binding_score)))
         
             return normalized_score
         

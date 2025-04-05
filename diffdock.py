@@ -29,24 +29,25 @@ def call_diffdock_api(input_structure, input_pdb, smiles_string, input_ligand,
 
     if os.path.exists(output_file_path):
         shutil.move(output_file_path, new_output_path)
-        print(f"Output file moved to: {new_output_path}")
+        #print(f"Output file moved to: {new_output_path}")
     else:
         print(f"Warning: Output file not found at {output_file_path}")
 
-    return {
+    """return {
         "binding_affinity": result[0],
         "ranked_samples": result[1],
         "output_file_path": new_output_path
-    }
+    }"""
+    return result[0]
 
 if __name__ == "__main__":
     # Provide local file paths
-    pdb_file = "6w70.pdb"  # Update with your actual local file path
-    ligand_file = "6w70_ligand.sdf"  # Update with your actual local file path
+    pdb_file = "compound_visualizations\\target_protein.pdb"  # Update with your actual local file path
+    ligand_file = "compound_visualizations\\compound_1_3D.sdf"  # Update with your actual local file path
     
     # Example SMILES
     smiles = "CC(=O)Nc1ccc(O)cc1"  # Example SMILES 
     
     # Call API with local file paths
     result = call_diffdock_api("6w70", pdb_file, smiles, ligand_file)
-    print("DiffDock Binding Affinity Results:", result)
+    #print("DiffDock Binding Affinity Results:", result)
