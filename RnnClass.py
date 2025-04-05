@@ -39,8 +39,8 @@ def generate_diverse_molecules(
         max_attempts (int): Maximum generation attempts
     
     Returns:
-        List[str]: List of unique valid molecules
-    """
+        List[str]: List of unique valid molecules"""
+    
     model.eval() #switched the model from training to evaluation mode
     unique_molecules: Set[str] = set()
     generation_attempts = 0

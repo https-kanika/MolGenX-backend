@@ -52,8 +52,6 @@ def find_optimized_candidates():
     protein_sequence = protein_input
   
   char_to_idx, idx_to_char = return_vocabulary()
-  model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
-
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
   model.load_state_dict(torch.load("rnn_model.pth", map_location=device))
@@ -103,13 +101,13 @@ def find_optimized_candidates():
   optimized_variants, variants_explanation = get_optimized_variants(protein_sequence,optimized_compounds,optimizer,optimization_params)
   
   # Read the exported CSV instead of using the objects directly
-  serialized_compounds = pd.read_csv("optimized_drug_candidates.csv").to_dict(orient="records")
+  serialized_compounds = pd.read_csv("optimized_drug_candidates.csv").to_json(orient="records")
 
 # For optimized_variants, either export to CSV first or create a serializable version
   if optimized_variants:
     # Option 1: Export variants to CSV and read back
     optimizer.export_results(optimized_variants, "optimized_variants.csv")
-    serialized_variants = pd.read_csv("optimized_variants.csv").to_dict(orient="records")
+    serialized_variants = pd.read_csv("optimized_variants.csv").to_json(orient="records")
   else:
     serialized_variants = []
 
