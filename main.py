@@ -9,6 +9,7 @@ from RnnClass import RNNGenerator, generate_diverse_molecules
 from utils import return_vocabulary
 import torch
 from visualization import visualize_simple
+from pathlib import Path
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {
@@ -17,6 +18,9 @@ CORS(app, resources={r"/api/*": {
     "allow_headers": ["Content-Type", "Authorization"],
     "supports_credentials": True
 }})
+
+MODEL_PATH = os.environ.get('MODEL_PATH', Path(__file__).parent / "rnn_model.pth")
+
 
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
@@ -63,7 +67,7 @@ def find_optimized_candidates():
   char_to_idx, idx_to_char = return_vocabulary()
   device = torch.device("cpu")
   model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
-  model.load_state_dict(torch.load("rnn_model.pth", map_location=device))
+  model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
   model.to(device)
   diverse_molecules = generate_diverse_molecules(
         model, 
