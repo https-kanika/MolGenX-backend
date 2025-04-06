@@ -14,7 +14,6 @@ from transformers import GPT2LMHeadModel, PreTrainedTokenizerFast
 from diffdock import call_diffdock_api
 import os
 from visualization import visualize_simple
-from utils import get_pdb_id_from_sequence
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
