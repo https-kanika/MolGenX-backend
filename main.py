@@ -13,9 +13,11 @@ from visualization import visualize_simple
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {
     "origins": os.environ.get('CORS_ORIGINS', '*'),
-    "methods": ["POST", "OPTIONS"],
+    "methods": ["POST", "OPTIONS", "GET"],
+    "allow_headers": ["Content-Type", "Authorization"],
     "supports_credentials": True
 }})
+
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
   """
