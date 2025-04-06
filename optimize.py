@@ -94,7 +94,7 @@ class DrugOptimizer:
         
         rotatable_bonds = Descriptors.NumRotatableBonds(mol)
         ring_count = Descriptors.RingCount(mol)
-        spiro_count = Descriptors.NumSpiroAtoms(mol)
+        spiro_count = Descriptors.CalcNumSpiroAtoms(mol)
         bridgehead_count = Descriptors.NumBridgeheadAtoms(mol)
         
         complexity_score = (
