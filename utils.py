@@ -1,6 +1,7 @@
 from rdkit import Chem
 import numpy as np
 import pandas as pd
+import os
 
 def return_vocabulary(csv="cleaned_smiles.csv"):
     try:
@@ -115,3 +116,62 @@ def get_pdb_id_from_sequence(sequence):
     except Exception as e:
         print(f"Error searching for PDB ID: {str(e)}")
         return None
+    
+
+def get_visualization_data(output_dir):
+    """Helper function to get visualization file data"""
+    visualization_data = {
+        'files': {},
+        'compounds': []
+    }
+    
+    try:
+        # Get all files in output directory
+        for i in range(1, 11):  # Assuming max 10 compounds
+            compound_data = {
+                '2d': None,
+                '3d': {
+                    'pdb': None,
+                    'sdf': None,
+                    'viewer': None
+                }
+            }
+            
+            # Get 2D image filename
+            filename_2d = f"compound_{i}_2D.png"
+            if os.path.exists(os.path.join(output_dir, filename_2d)):
+                compound_data['2d'] = filename_2d
+            
+            # Get 3D files
+            pdb_file = f"compound_{i}_3D.pdb"
+            if os.path.exists(os.path.join(output_dir, pdb_file)):
+                with open(os.path.join(output_dir, pdb_file), 'r') as f:
+                    compound_data['3d']['pdb'] = {
+                        'filename': pdb_file,
+                        'content': f.read()
+                    }
+            
+            sdf_file = f"compound_{i}_3D.sdf"
+            if os.path.exists(os.path.join(output_dir, sdf_file)):
+                with open(os.path.join(output_dir, sdf_file), 'r') as f:
+                    compound_data['3d']['sdf'] = {
+                        'filename': sdf_file,
+                        'content': f.read()
+                    }
+            
+            viewer_file = f"compound_{i}_3D_viewer.html"
+            if os.path.exists(os.path.join(output_dir, viewer_file)):
+                compound_data['3d']['viewer'] = viewer_file
+                
+            if any(compound_data.values()):
+                visualization_data['compounds'].append(compound_data)
+        
+        # Get grid visualization
+        grid_file = "all_compounds_grid.png"
+        if os.path.exists(os.path.join(output_dir, grid_file)):
+            visualization_data['files']['grid'] = grid_file
+            
+    except Exception as e:
+        print(f"Error reading visualization files: {str(e)}")
+        
+    return visualization_data

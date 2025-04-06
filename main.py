@@ -6,7 +6,7 @@ from optimize import DrugOptimizer, get_optimized_variants
 import pandas as pd
 import numpy as np
 from RnnClass import RNNGenerator, generate_diverse_molecules
-from utils import return_vocabulary
+from utils import return_vocabulary, get_visualization_data
 import torch
 from visualization import visualize_simple
 from pathlib import Path
@@ -20,6 +20,7 @@ CORS(app, resources={r"/api/*": {
 }})
 
 MODEL_PATH = os.environ.get('MODEL_PATH', Path(__file__).parent / "rnn_model.pth")
+
 
 
 @app.route("/api/optimize", methods=["POST"])
@@ -75,14 +76,9 @@ def find_optimized_candidates():
         idx_to_char, 
         device, 
         start_token="C", 
-        num_molecules=5
+        num_molecules=5  #modify this to generate more molecules, idealy should be in 1000s
     )
 
-  
-  #print("Generated Molecules:")
-  #for mol in diverse_molecules:
-    #print(mol)
-  
   optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
   weights =request.json['weights']
   optimization_params = {
@@ -91,36 +87,32 @@ def find_optimized_candidates():
     }
 
   optimized_compounds = optimizer.optimize(optimization_params)
-  #TODO filteration on basis of druglikeness, synthetic accessibility, etc to be done in frontend
 
   optimizer.export_results(optimized_compounds, "optimized_drug_candidates.csv")
     
-  #TODO Call visualization function
   explanation = optimizer.explain_results_with_gemini(optimized_compounds)
   optimized_variants, variants_explanation = get_optimized_variants(protein_sequence,optimized_compounds,optimizer,optimization_params)
-  
-  # Read the exported CSV instead of using the objects directly
+
   serialized_compounds = pd.read_csv("optimized_drug_candidates.csv").to_json(orient="records")
 
-# For optimized_variants, either export to CSV first or create a serializable version
   if optimized_variants:
-    # Option 1: Export variants to CSV and read back
     optimizer.export_results(optimized_variants, "optimized_variants.csv")
     serialized_variants = pd.read_csv("optimized_variants.csv").to_json(orient="records")
   else:
     serialized_variants = []
 
-  visualize_simple(optimized_compounds, show_protein=False, pdb_id=pdb_id)
-  visualize_simple(optimized_variants, show_protein=False, pdb_id=pdb_id)
-    
+  all_compounds = optimized_compounds + optimized_variants
+  visualize_simple(all_compounds, show_protein=True, pdb_id=pdb_id)
+  
+  visualization_data = get_visualization_data("compound_visualizations")
 
   return jsonify({
     "optimized_compounds": serialized_compounds,
     "explanation": explanation,
     "optimized_variants": serialized_variants,
-    "variants_explanation": variants_explanation
-})
-  #TODO Call visualization function
+    "variants_explanation": variants_explanation,
+    "compound_visualization": visualization_data
+})  
 
 @app.errorhandler(500)
 def handle_500_error(error):
@@ -131,4 +123,4 @@ def handle_404_error(error):
     return jsonify({"error": "Resource not found"}), 404
 
 if __name__ == "__main__":
-  app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+  app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 3000)))

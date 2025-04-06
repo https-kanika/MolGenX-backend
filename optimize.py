@@ -977,7 +977,7 @@ class DrugOptimizer:
 def get_optimized_variants(protien_sequence,optimized_compounds,optimizer,optimization_params):
     top_compound = optimized_compounds[0]['smiles']
         
-    variants = optimizer.generate_molecular_modifications(top_compound, 50)
+    variants = optimizer.generate_molecular_modifications(top_compound, 10)      #modify this to change the number of variants generated
     #print(f"Generated {len(variants)} variants of top compound")
 
     variant_optimizer = DrugOptimizer(variants, protien_sequence)  

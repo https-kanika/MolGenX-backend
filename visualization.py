@@ -4,10 +4,16 @@ import py3Dmol
 from IPython.display import display
 import os
 import requests
+import shutil
 
 def visualize_simple(compounds, show_protein=True,pdb_id=None):
     output_dir = "compound_visualizations"
-
+    if os.path.exists(output_dir):
+        try:
+            shutil.rmtree(output_dir)
+            print(f"Successfully deleted {output_dir}")
+        except Exception as e:
+            print(f"Error deleting directory: {e}")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
             
