@@ -11,8 +11,10 @@ import torch
 from visualization import visualize_simple
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080", "supports_credentials": True}})
-
+CORS(app, resources={r"/api/*": {
+    "origins": os.environ.get('CORS_ORIGINS', '*'),
+    "supports_credentials": True
+}})
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
   """
@@ -121,5 +123,5 @@ def handle_500_error(error):
 def handle_404_error(error):
     return jsonify({"error": "Resource not found"}), 404
 
-if __name__ == "__main__":
-  app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+#if __name__ == "__main__":
+  #app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
