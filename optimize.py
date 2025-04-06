@@ -1,6 +1,6 @@
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import Descriptors, Crippen, Lipinski, QED, AllChem, Draw
+from rdkit.Chem import Descriptors, Crippen, Lipinski, QED, AllChem, Draw, rdMolDescriptors
 from rdkit.Chem.rdMolDescriptors import CalcNumRotatableBonds, CalcTPSA
 import torch
 import pandas as pd
@@ -94,7 +94,7 @@ class DrugOptimizer:
         
         rotatable_bonds = Descriptors.NumRotatableBonds(mol)
         ring_count = Descriptors.RingCount(mol)
-        spiro_count = Descriptors.CalcNumSpiroAtoms(mol)
+        spiro_count = rdMolDescriptors.CalcNumSpiroAtoms(mol)
         bridgehead_count = Descriptors.NumBridgeheadAtoms(mol)
         
         complexity_score = (
