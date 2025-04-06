@@ -62,7 +62,7 @@ stack-data==0.6.3
 sympy==1.13.1
 tokenizers==0.21.1
 --find-links https://download.pytorch.org/whl/cpu
-torch==2.4.1+cpu
+torch==2.4.1
 tqdm==4.67.1
 traitlets==5.14.3
 transformers==4.50.3
