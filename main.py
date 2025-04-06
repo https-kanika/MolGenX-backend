@@ -56,7 +56,7 @@ def find_optimized_candidates():
 
   
   char_to_idx, idx_to_char = return_vocabulary()
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  device = torch.device("cpu")
   model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
   model.load_state_dict(torch.load("rnn_model.pth", map_location=device))
   model.to(device)
