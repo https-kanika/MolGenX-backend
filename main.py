@@ -123,5 +123,5 @@ def handle_500_error(error):
 def handle_404_error(error):
     return jsonify({"error": "Resource not found"}), 404
 
-#if __name__ == "__main__":
-  #app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+if __name__ == "__main__":
+  app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

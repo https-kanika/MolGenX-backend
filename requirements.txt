@@ -76,3 +76,4 @@ zope.event==5.0
 zope.interface==7.2
 websockets==11.0.0
 gunicorn==21.2.0
+gevent==24.2.1
