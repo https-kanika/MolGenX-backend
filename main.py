@@ -112,6 +112,83 @@ def find_optimized_candidates():
     "compound_visualization": visualization_data
 })  
 
+@app.route('/', methods=['GET'])
+def index():
+    """
+    Base endpoint returning a simple HTML welcome page
+    """
+    html = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MolGenX Backend</title>
+        <style>
+            body {
+                font-family: 'Arial', sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                color: #333;
+                background-color: #f9f9f9;
+            }
+            .container {
+                background-color: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                padding: 30px;
+                margin-top: 40px;
+            }
+            h1 {
+                color: #2c3e50;
+                border-bottom: 2px solid #3498db;
+                padding-bottom: 10px;
+            }
+            .status {
+                display: inline-block;
+                background-color: #2ecc71;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            .endpoints {
+                background-color: #f8f9fa;
+                padding: 15px;
+                border-radius: 6px;
+                margin-top: 25px;
+            }
+            code {
+                background-color: #f1f1f1;
+                padding: 3px 5px;
+                border-radius: 3px;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>MolGenX Backend API</h1>
+            <p>You've successfully landed at the MolGenX backend server.</p>
+            <p>Status: <span class="status">Running</span></p>
+            
+            <div class="endpoints">
+                <h2>Available Endpoints:</h2>
+                <ul>
+                    <li><code>POST /api/optimize</code> - Optimize drug candidates based on protein targets</li>
+                </ul>
+            </div>
+            
+            <p>For more information, please refer to the <a href="https://github.com/https-kanika/MolGenX-backend">documentation</a>.</p>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
+
 @app.errorhandler(500)
 def handle_500_error(error):
     return jsonify({"error": "Internal server error"}), 500
