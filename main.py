@@ -21,8 +21,6 @@ CORS(app, resources={r"/api/*": {
 
 MODEL_PATH = os.environ.get('MODEL_PATH', Path(__file__).parent / "rnn_model.pth")
 
-
-
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
   """
