@@ -1,0 +1,31 @@
+{
+  "tests_run": 4,
+  "total_proteins": 4,
+  "average_similarity": 0.17661378700507943,
+  "individual_results": [
+    {
+      "protein": "EGFR",
+      "avg_similarity": 0.15889258861348377,
+      "generated_compounds": 10,
+      "elapsed_time": 91.22193098068237
+    },
+    {
+      "protein": "COX2",
+      "avg_similarity": 0.16331076265146116,
+      "generated_compounds": 10,
+      "elapsed_time": 97.2994236946106
+    },
+    {
+      "protein": "ACE2",
+      "avg_similarity": 0.17535850160959907,
+      "generated_compounds": 10,
+      "elapsed_time": 93.24245047569275
+    },
+    {
+      "protein": "HIV_Protease",
+      "avg_similarity": 0.20889329514577368,
+      "generated_compounds": 10,
+      "elapsed_time": 94.94531154632568
+    }
+  ]
+}

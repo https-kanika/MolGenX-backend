@@ -6,7 +6,7 @@ from optimize import DrugOptimizer, get_optimized_variants
 import pandas as pd
 import numpy as np
 from RnnClass import RNNGenerator, generate_diverse_molecules
-from utils import return_vocabulary, get_visualization_data
+from utils import return_vocabulary, get_compound_files
 import torch
 from visualization import visualize_simple
 from pathlib import Path
@@ -25,22 +25,39 @@ MODEL_PATH = os.environ.get('MODEL_PATH', Path(__file__).parent / "rnn_model.pth
 def find_optimized_candidates():
   """
   Endpoint to find optimized drug candidates based on input protein and SMILES data.
-  Input: target protein (can be either amino acid sequence or PDB ID), weights for optimization metrics should be like 
-  'weights': {
-            'druglikeness': 1.0,
-            'synthetic_accessibility': 0.8,
-            'lipinski_violations': 0.7,
-            'toxicity': 1.2,
-            'binding_affinity': 1.5,
-            'solubility': 0.6
-        },
+  Input: 
+    - target protein (can be either amino acid sequence or PDB ID)
+    - weights for optimization metrics
+    - generate_visualizations (optional boolean, default=True): whether to generate compound visualizations
+  
+  Example payload:
+  {
+    "pdb_id": "1M17",
+    "protein": "FKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREA...",
+    "weights": {
+      "druglikeness": 1.0,
+      "synthetic_accessibility": 0.8,
+      "lipinski_violations": 0.7,
+      "toxicity": 1.2,
+      "binding_affinity": 1.5,
+      "solubility": 0.6
+    },
+    "generate_visualizations": true
+  }
+  
+  Output: optimized drug candidates and their properties.
+  When visualizations are requested, the images are Base64 encoded and sent as data URLs,
+  The PDB and SDF files are sent as plain text in the JSON response.
   """
+  
   if not request.json or 'protein' not in request.json:
     return jsonify({"error": "Missing protein data"}), 400
   
   
   pdb_id= request.json.get('pdb_id')
   protein_input = request.json.get('protein', None)
+  
+  generate_visualizations = request.json.get('generate_visualizations', False)
 
   if protein_input== None:
     try:
@@ -74,7 +91,7 @@ def find_optimized_candidates():
         idx_to_char, 
         device, 
         start_token="C", 
-        num_molecules=5  #modify this to generate more molecules, idealy should be in 1000s
+        num_molecules=10  #modify this to generate more molecules, idealy should be in 1000s
     )
 
   optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
@@ -99,18 +116,25 @@ def find_optimized_candidates():
   else:
     serialized_variants = []
 
-  all_compounds = optimized_compounds + optimized_variants
-  visualize_simple(all_compounds, show_protein=True, pdb_id=pdb_id)
-  
-  visualization_data = get_visualization_data("compound_visualizations")
+  visualization_data = {}
+  if generate_visualizations:
+    all_compounds = optimized_compounds + optimized_variants
+    visualize_simple(all_compounds, show_protein=True, pdb_id=pdb_id)
+    visualization_data = get_compound_files("compound_visualizations")
 
-  return jsonify({
+  # Build response based on visualization parameter
+  response = {
     "optimized_compounds": serialized_compounds,
     "explanation": explanation,
     "optimized_variants": serialized_variants,
-    "variants_explanation": variants_explanation,
-    "compound_visualization": visualization_data
-})  
+    "variants_explanation": variants_explanation
+  }
+  
+  # Only include visualization data if it was generated
+  if generate_visualizations:
+    response["compound_visualization"] = visualization_data
+
+  return jsonify(response)
 
 @app.route('/', methods=['GET'])
 def index():

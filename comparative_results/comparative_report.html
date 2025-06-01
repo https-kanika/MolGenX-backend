@@ -1,0 +1,577 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>MolGenX Comparative Analysis Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                h1, h2, h3 { color: #333; }
+                .summary { background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                .protein-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 30px; }
+                .protein-header { background-color: #e9e9e9; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+                .compound-comparison { display: flex; flex-wrap: wrap; gap: 20px; }
+                .known-compound { flex: 1; min-width: 300px; border: 1px solid #ccc; border-radius: 5px; padding: 10px; }
+                table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background-color: #f2f2f2; }
+                .similarity-high { color: green; font-weight: bold; }
+                .similarity-medium { color: orange; }
+                .similarity-low { color: red; }
+                img { max-width: 100%; height: auto; margin: 10px 0; }
+            </style>
+        </head>
+        <body>
+            <h1>MolGenX Comparative Analysis Report</h1>
+            
+            <div class="summary">
+                <h2>Summary</h2>
+                <p><strong>Tests Run:</strong> 4/4 proteins</p>
+                <p><strong>Overall Average Similarity:</strong> 0.18</p>
+                
+                <img src="comparative_summary.png" alt="Summary Chart">
+            </div>
+        
+            <div class="protein-card">
+                <div class="protein-header">
+                    <h2>EGFR: Epidermal Growth Factor Receptor - Cancer drug target</h2>
+                    <p><strong>PDB ID:</strong> 1M17</p>
+                    <p><strong>Generated Compounds:</strong> 10</p>
+                    <p><strong>Average Max Similarity:</strong> 0.16</p>
+                    <p><strong>Analysis Time:</strong> 91.22 seconds</p>
+                </div>
+                
+                <img src="EGFR_similarities.png" alt="EGFR Similarities">
+                <img src="EGFR_properties.png" alt="EGFR Properties">
+                
+                <h3>Comparison with Known Compounds</h3>
+                <div class="compound-comparison">
+            
+                <div class="known-compound">
+                    <h4>Erlotinib</h4>
+                    <p><strong>SMILES:</strong> <span title="CNC(=O)C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1">CNC(=O)C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1...</span></p>
+                    <p><strong>Known Activity:</strong> 0.2 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.17</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>1</td>
+                        <td>0.17</td>
+                        <td>0.90</td>
+                        <td>0.26</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>2</td>
+                        <td>0.15</td>
+                        <td>0.83</td>
+                        <td>0.33</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>8</td>
+                        <td>0.14</td>
+                        <td>0.67</td>
+                        <td>0.32</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Gefitinib</h4>
+                    <p><strong>SMILES:</strong> <span title="COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1">COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1...</span></p>
+                    <p><strong>Known Activity:</strong> 0.033 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.14</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>4</td>
+                        <td>0.14</td>
+                        <td>0.66</td>
+                        <td>0.45</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>8</td>
+                        <td>0.13</td>
+                        <td>0.67</td>
+                        <td>0.32</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>2</td>
+                        <td>0.12</td>
+                        <td>0.83</td>
+                        <td>0.33</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Osimertinib</h4>
+                    <p><strong>SMILES:</strong> <span title="COc1cc(N(C)CCN(C)C)c(NC(=O)C=C)cc1Nc1nccc(-c2cn(C)c3ccccc23)n1">COc1cc(N(C)CCN(C)C)c(NC(=O)C=C)cc1Nc1nccc(-c2cn(C)...</span></p>
+                    <p><strong>Known Activity:</strong> 0.001 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.16</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>3</td>
+                        <td>0.16</td>
+                        <td>0.89</td>
+                        <td>0.22</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>2</td>
+                        <td>0.15</td>
+                        <td>0.83</td>
+                        <td>0.33</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>8</td>
+                        <td>0.15</td>
+                        <td>0.67</td>
+                        <td>0.32</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                </div>
+            </div>
+            
+            <div class="protein-card">
+                <div class="protein-header">
+                    <h2>COX2: Cyclooxygenase-2 - Anti-inflammatory target</h2>
+                    <p><strong>PDB ID:</strong> 5KIR</p>
+                    <p><strong>Generated Compounds:</strong> 10</p>
+                    <p><strong>Average Max Similarity:</strong> 0.16</p>
+                    <p><strong>Analysis Time:</strong> 97.30 seconds</p>
+                </div>
+                
+                <img src="COX2_similarities.png" alt="COX2 Similarities">
+                <img src="COX2_properties.png" alt="COX2 Properties">
+                
+                <h3>Comparison with Known Compounds</h3>
+                <div class="compound-comparison">
+            
+                <div class="known-compound">
+                    <h4>Celecoxib</h4>
+                    <p><strong>SMILES:</strong> <span title="CC1=CC=C(C=C1)C1=CC(=NN1C1=CC=C(C=C1)S(N)(=O)=O)C(F)(F)F">CC1=CC=C(C=C1)C1=CC(=NN1C1=CC=C(C=C1)S(N)(=O)=O)C(...</span></p>
+                    <p><strong>Known Activity:</strong> 0.04 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.12</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>3</td>
+                        <td>0.12</td>
+                        <td>0.87</td>
+                        <td>0.19</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>10</td>
+                        <td>0.12</td>
+                        <td>0.65</td>
+                        <td>0.28</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>1</td>
+                        <td>0.12</td>
+                        <td>0.82</td>
+                        <td>0.43</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Rofecoxib</h4>
+                    <p><strong>SMILES:</strong> <span title="CS(=O)(=O)c1ccc(cc1)C1=C(C(=O)OC1)c1ccccc1">CS(=O)(=O)c1ccc(cc1)C1=C(C(=O)OC1)c1ccccc1...</span></p>
+                    <p><strong>Known Activity:</strong> 0.018 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.15</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>6</td>
+                        <td>0.15</td>
+                        <td>0.86</td>
+                        <td>0.20</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>5</td>
+                        <td>0.13</td>
+                        <td>0.81</td>
+                        <td>0.30</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>8</td>
+                        <td>0.11</td>
+                        <td>0.88</td>
+                        <td>0.15</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Etoricoxib</h4>
+                    <p><strong>SMILES:</strong> <span title="CCOC1=C(C=CC(=C1)C1=NC(=C(S1)C(=O)C)C1=CC=C(C=C1)Cl)C">CCOC1=C(C=CC(=C1)C1=NC(=C(S1)C(=O)C)C1=CC=C(C=C1)C...</span></p>
+                    <p><strong>Known Activity:</strong> 0.0015 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.22</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>8</td>
+                        <td>0.22</td>
+                        <td>0.88</td>
+                        <td>0.15</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>1</td>
+                        <td>0.18</td>
+                        <td>0.82</td>
+                        <td>0.43</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>9</td>
+                        <td>0.17</td>
+                        <td>0.67</td>
+                        <td>0.08</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                </div>
+            </div>
+            
+            <div class="protein-card">
+                <div class="protein-header">
+                    <h2>ACE2: Angiotensin-converting enzyme 2 - Cardiovascular disease target</h2>
+                    <p><strong>PDB ID:</strong> 6M0J</p>
+                    <p><strong>Generated Compounds:</strong> 10</p>
+                    <p><strong>Average Max Similarity:</strong> 0.18</p>
+                    <p><strong>Analysis Time:</strong> 93.24 seconds</p>
+                </div>
+                
+                <img src="ACE2_similarities.png" alt="ACE2 Similarities">
+                <img src="ACE2_properties.png" alt="ACE2 Properties">
+                
+                <h3>Comparison with Known Compounds</h3>
+                <div class="compound-comparison">
+            
+                <div class="known-compound">
+                    <h4>Lisinopril</h4>
+                    <p><strong>SMILES:</strong> <span title="NCCCCC(NC(=O)C(CC1=CC=CC=C1)NC(=O)C(N)CC1=CC=CC=C1)C(=O)O">NCCCCC(NC(=O)C(CC1=CC=CC=C1)NC(=O)C(N)CC1=CC=CC=C1...</span></p>
+                    <p><strong>Known Activity:</strong> 0.1 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.22</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>6</td>
+                        <td>0.22</td>
+                        <td>0.77</td>
+                        <td>0.23</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>3</td>
+                        <td>0.15</td>
+                        <td>0.69</td>
+                        <td>0.40</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>4</td>
+                        <td>0.13</td>
+                        <td>0.71</td>
+                        <td>0.24</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Enalaprilat</h4>
+                    <p><strong>SMILES:</strong> <span title="CCOC(=O)C(CCC(=O)O)NC(C)C(=O)N1CCCC1C(=O)O">CCOC(=O)C(CCC(=O)O)NC(C)C(=O)N1CCCC1C(=O)O...</span></p>
+                    <p><strong>Known Activity:</strong> 0.036 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.15</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>3</td>
+                        <td>0.15</td>
+                        <td>0.69</td>
+                        <td>0.40</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>4</td>
+                        <td>0.15</td>
+                        <td>0.71</td>
+                        <td>0.24</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>9</td>
+                        <td>0.15</td>
+                        <td>0.64</td>
+                        <td>0.17</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Captopril</h4>
+                    <p><strong>SMILES:</strong> <span title="CC(CS)C(=O)N1CCCC1C(=O)O">CC(CS)C(=O)N1CCCC1C(=O)O...</span></p>
+                    <p><strong>Known Activity:</strong> 0.023 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.15</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>4</td>
+                        <td>0.15</td>
+                        <td>0.71</td>
+                        <td>0.24</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>9</td>
+                        <td>0.15</td>
+                        <td>0.64</td>
+                        <td>0.17</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>6</td>
+                        <td>0.14</td>
+                        <td>0.77</td>
+                        <td>0.23</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                </div>
+            </div>
+            
+            <div class="protein-card">
+                <div class="protein-header">
+                    <h2>HIV_Protease: HIV-1 Protease - Antiviral target</h2>
+                    <p><strong>PDB ID:</strong> 6B3S</p>
+                    <p><strong>Generated Compounds:</strong> 10</p>
+                    <p><strong>Average Max Similarity:</strong> 0.21</p>
+                    <p><strong>Analysis Time:</strong> 94.95 seconds</p>
+                </div>
+                
+                <img src="HIV_Protease_similarities.png" alt="HIV_Protease Similarities">
+                <img src="HIV_Protease_properties.png" alt="HIV_Protease Properties">
+                
+                <h3>Comparison with Known Compounds</h3>
+                <div class="compound-comparison">
+            
+                <div class="known-compound">
+                    <h4>Saquinavir</h4>
+                    <p><strong>SMILES:</strong> <span title="CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(O)C(Cc1ccccc1)NC(=O)C(CC(N)=O)NC(=O)c1ccc2ccccc2n1">CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(O)C(Cc1ccccc1)NC(=O...</span></p>
+                    <p><strong>Known Activity:</strong> 0.004 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.17</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>8</td>
+                        <td>0.17</td>
+                        <td>0.80</td>
+                        <td>0.16</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>10</td>
+                        <td>0.16</td>
+                        <td>0.80</td>
+                        <td>0.13</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>2</td>
+                        <td>0.14</td>
+                        <td>0.76</td>
+                        <td>0.42</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Ritonavir</h4>
+                    <p><strong>SMILES:</strong> <span title="CC(C)c1nc(CN(C)C(=O)NC(C(=O)NC(Cc2ccccc2)CC(O)C(Cc2ccccc2)NC(=O)OCc2cncs2)C(C)C)cs1">CC(C)c1nc(CN(C)C(=O)NC(C(=O)NC(Cc2ccccc2)CC(O)C(Cc...</span></p>
+                    <p><strong>Known Activity:</strong> 0.015 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.22</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>10</td>
+                        <td>0.22</td>
+                        <td>0.80</td>
+                        <td>0.13</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>4</td>
+                        <td>0.17</td>
+                        <td>0.75</td>
+                        <td>0.36</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>2</td>
+                        <td>0.15</td>
+                        <td>0.76</td>
+                        <td>0.42</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                <div class="known-compound">
+                    <h4>Darunavir</h4>
+                    <p><strong>SMILES:</strong> <span title="CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1COC2CCCCC2O1)S(=O)(=O)C1CC1">CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1COC2CCCCC2O1)S(=...</span></p>
+                    <p><strong>Known Activity:</strong> 0.0001 uM</p>
+                    <p><strong>Max Similarity:</strong> <span class="similarity-low">0.24</span></p>
+                    
+                    <h5>Top Matching Compounds</h5>
+                    <table>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Similarity</th>
+                            <th>Druglikeness</th>
+                            <th>Binding Affinity</th>
+                        </tr>
+                
+                    <tr>
+                        <td>8</td>
+                        <td>0.24</td>
+                        <td>0.80</td>
+                        <td>0.16</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>10</td>
+                        <td>0.18</td>
+                        <td>0.80</td>
+                        <td>0.13</td>
+                    </tr>
+                    
+                    <tr>
+                        <td>6</td>
+                        <td>0.17</td>
+                        <td>0.87</td>
+                        <td>0.20</td>
+                    </tr>
+                    
+                    </table>
+                </div>
+                
+                </div>
+            </div>
+            
+        </body>
+        </html>
+        

@@ -1,0 +1,274 @@
+{
+  "protein": "ACE2",
+  "pdb_id": "6M0J",
+  "description": "Angiotensin-converting enzyme 2 - Cardiovascular disease target",
+  "generated_compounds": 10,
+  "comparison": [
+    {
+      "known_compound": "Lisinopril",
+      "known_smiles": "NCCCCC(NC(=O)C(CC1=CC=CC=C1)NC(=O)C(N)CC1=CC=CC=C1)C(=O)O",
+      "known_activity": 0.1,
+      "top_matches": [
+        {
+          "rank": 6,
+          "generated_smiles": "CC(C)c1noc(C[NH+](CC(N)=O)Cc2ccccc2)n1",
+          "similarity": 0.22388059701492538,
+          "druglikeness": 0.7654598662000001,
+          "binding_affinity": 0.22589416650000002,
+          "toxicity": 0.24029848
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CCOC(=O)C1=C(C)C(C#N)(CCc2ccccc2)C(=O)N[C@@H]1c1ccc(Cl)cc1",
+          "similarity": 0.14814814814814814,
+          "druglikeness": 0.6932021934,
+          "binding_affinity": 0.401820453,
+          "toxicity": 0.24089159999999998
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "Cc1cccc(NC(=O)C(=O)N[C@H]2CC[NH+](CC(C)C)C2)c1C",
+          "similarity": 0.13157894736842105,
+          "druglikeness": 0.7147612224000001,
+          "binding_affinity": 0.23943798600000002,
+          "toxicity": 0.20628607000000002
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "CCC[NH2+][C@H](Cc1cccc(C)c1)[C@H]1CCOC2(CCCCC2)C1",
+          "similarity": 0.125,
+          "druglikeness": 0.8377305992,
+          "binding_affinity": 0.1999798345,
+          "toxicity": 0.2076152
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "CCCC[C@H](C)Nc1cncc(C#N)c1N",
+          "similarity": 0.11594202898550725,
+          "druglikeness": 0.7959393917,
+          "binding_affinity": 0.1187691008,
+          "toxicity": 0.20860493
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CCOc1ccc(C(=O)Nc2ccc([N+](=O)[O-])c(C)c2)cc1",
+          "similarity": 0.10810810810810811,
+          "druglikeness": 0.6759021681,
+          "binding_affinity": 0.2463370745,
+          "toxicity": 0.37415993000000003
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "Cc1cccc(NC(=O)C[NH+]2CCC[C@@H](C(=O)Nc3nccs3)C2)c1C",
+          "similarity": 0.10465116279069768,
+          "druglikeness": 0.7457022622,
+          "binding_affinity": 0.3865021806,
+          "toxicity": 0.24074426000000002
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CCCNc1ccc(C(=O)N2CCCN(C(=O)OC(C)(C)C)CC2)cn1",
+          "similarity": 0.1,
+          "druglikeness": 0.8911443935000001,
+          "binding_affinity": 0.366368012,
+          "toxicity": 0.20668678000000001
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC[NH+](CC)CCN(CC(F)F)C(=O)[C@@H]1CC(=O)N(CC(F)(F)F)C1",
+          "similarity": 0.0875,
+          "druglikeness": 0.5947644859,
+          "binding_affinity": 0.3095234831,
+          "toxicity": 0.1720071
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CC[NH2+][C@]1(C(=O)[O-])CCC[C@@H]1CC[NH+]1CCCCCC1",
+          "similarity": 0.06756756756756757,
+          "druglikeness": 0.636959987,
+          "binding_affinity": 0.1722605892,
+          "toxicity": 0.17677233
+        }
+      ],
+      "max_similarity": 0.22388059701492538
+    },
+    {
+      "known_compound": "Enalaprilat",
+      "known_smiles": "CCOC(=O)C(CCC(=O)O)NC(C)C(=O)N1CCCC1C(=O)O",
+      "known_activity": 0.036,
+      "top_matches": [
+        {
+          "rank": 3,
+          "generated_smiles": "CCOC(=O)C1=C(C)C(C#N)(CCc2ccccc2)C(=O)N[C@@H]1c1ccc(Cl)cc1",
+          "similarity": 0.15294117647058825,
+          "druglikeness": 0.6932021934,
+          "binding_affinity": 0.401820453,
+          "toxicity": 0.24089159999999998
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "Cc1cccc(NC(=O)C(=O)N[C@H]2CC[NH+](CC(C)C)C2)c1C",
+          "similarity": 0.1518987341772152,
+          "druglikeness": 0.7147612224000001,
+          "binding_affinity": 0.23943798600000002,
+          "toxicity": 0.20628607000000002
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CC[NH2+][C@]1(C(=O)[O-])CCC[C@@H]1CC[NH+]1CCCCCC1",
+          "similarity": 0.1506849315068493,
+          "druglikeness": 0.636959987,
+          "binding_affinity": 0.1722605892,
+          "toxicity": 0.17677233
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CCCNc1ccc(C(=O)N2CCCN(C(=O)OC(C)(C)C)CC2)cn1",
+          "similarity": 0.14814814814814814,
+          "druglikeness": 0.8911443935000001,
+          "binding_affinity": 0.366368012,
+          "toxicity": 0.20668678000000001
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CCOc1ccc(C(=O)Nc2ccc([N+](=O)[O-])c(C)c2)cc1",
+          "similarity": 0.14473684210526316,
+          "druglikeness": 0.6759021681,
+          "binding_affinity": 0.2463370745,
+          "toxicity": 0.37415993000000003
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "Cc1cccc(NC(=O)C[NH+]2CCC[C@@H](C(=O)Nc3nccs3)C2)c1C",
+          "similarity": 0.13636363636363635,
+          "druglikeness": 0.7457022622,
+          "binding_affinity": 0.3865021806,
+          "toxicity": 0.24074426000000002
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC[NH+](CC)CCN(CC(F)F)C(=O)[C@@H]1CC(=O)N(CC(F)(F)F)C1",
+          "similarity": 0.13580246913580246,
+          "druglikeness": 0.5947644859,
+          "binding_affinity": 0.3095234831,
+          "toxicity": 0.1720071
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC(C)c1noc(C[NH+](CC(N)=O)Cc2ccccc2)n1",
+          "similarity": 0.11538461538461539,
+          "druglikeness": 0.7654598662000001,
+          "binding_affinity": 0.22589416650000002,
+          "toxicity": 0.24029848
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "CCC[NH2+][C@H](Cc1cccc(C)c1)[C@H]1CCOC2(CCCCC2)C1",
+          "similarity": 0.10465116279069768,
+          "druglikeness": 0.8377305992,
+          "binding_affinity": 0.1999798345,
+          "toxicity": 0.2076152
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "CCCC[C@H](C)Nc1cncc(C#N)c1N",
+          "similarity": 0.09333333333333334,
+          "druglikeness": 0.7959393917,
+          "binding_affinity": 0.1187691008,
+          "toxicity": 0.20860493
+        }
+      ],
+      "max_similarity": 0.15294117647058825
+    },
+    {
+      "known_compound": "Captopril",
+      "known_smiles": "CC(CS)C(=O)N1CCCC1C(=O)O",
+      "known_activity": 0.023,
+      "top_matches": [
+        {
+          "rank": 4,
+          "generated_smiles": "Cc1cccc(NC(=O)C(=O)N[C@H]2CC[NH+](CC(C)C)C2)c1C",
+          "similarity": 0.14925373134328357,
+          "druglikeness": 0.7147612224000001,
+          "binding_affinity": 0.23943798600000002,
+          "toxicity": 0.20628607000000002
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CC[NH2+][C@]1(C(=O)[O-])CCC[C@@H]1CC[NH+]1CCCCCC1",
+          "similarity": 0.14754098360655737,
+          "druglikeness": 0.636959987,
+          "binding_affinity": 0.1722605892,
+          "toxicity": 0.17677233
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC(C)c1noc(C[NH+](CC(N)=O)Cc2ccccc2)n1",
+          "similarity": 0.140625,
+          "druglikeness": 0.7654598662000001,
+          "binding_affinity": 0.22589416650000002,
+          "toxicity": 0.24029848
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC[NH+](CC)CCN(CC(F)F)C(=O)[C@@H]1CC(=O)N(CC(F)(F)F)C1",
+          "similarity": 0.13043478260869565,
+          "druglikeness": 0.5947644859,
+          "binding_affinity": 0.3095234831,
+          "toxicity": 0.1720071
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CCCNc1ccc(C(=O)N2CCCN(C(=O)OC(C)(C)C)CC2)cn1",
+          "similarity": 0.12857142857142856,
+          "druglikeness": 0.8911443935000001,
+          "binding_affinity": 0.366368012,
+          "toxicity": 0.20668678000000001
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "Cc1cccc(NC(=O)C[NH+]2CCC[C@@H](C(=O)Nc3nccs3)C2)c1C",
+          "similarity": 0.11688311688311688,
+          "druglikeness": 0.7457022622,
+          "binding_affinity": 0.3865021806,
+          "toxicity": 0.24074426000000002
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CCOC(=O)C1=C(C)C(C#N)(CCc2ccccc2)C(=O)N[C@@H]1c1ccc(Cl)cc1",
+          "similarity": 0.10526315789473684,
+          "druglikeness": 0.6932021934,
+          "binding_affinity": 0.401820453,
+          "toxicity": 0.24089159999999998
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "CCC[NH2+][C@H](Cc1cccc(C)c1)[C@H]1CCOC2(CCCCC2)C1",
+          "similarity": 0.0945945945945946,
+          "druglikeness": 0.8377305992,
+          "binding_affinity": 0.1999798345,
+          "toxicity": 0.2076152
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CCOc1ccc(C(=O)Nc2ccc([N+](=O)[O-])c(C)c2)cc1",
+          "similarity": 0.08955223880597014,
+          "druglikeness": 0.6759021681,
+          "binding_affinity": 0.2463370745,
+          "toxicity": 0.37415993000000003
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "CCCC[C@H](C)Nc1cncc(C#N)c1N",
+          "similarity": 0.0625,
+          "druglikeness": 0.7959393917,
+          "binding_affinity": 0.1187691008,
+          "toxicity": 0.20860493
+        }
+      ],
+      "max_similarity": 0.14925373134328357
+    }
+  ],
+  "avg_max_similarity": 0.17535850160959907,
+  "elapsed_time": 93.24245047569275
+}

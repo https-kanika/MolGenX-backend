@@ -269,7 +269,9 @@ class DrugOptimizer:
     
     def estimate_binding_affinity(self, mol) -> float:
         """Estimate binding affinity using BioNeMo's DiffDock model"""
+        return self._fallback_binding_estimate(mol)
         try:
+
             smiles = Chem.MolToSmiles(mol)
             temp_compound = [{
                     'molecule': mol,

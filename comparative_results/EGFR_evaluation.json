@@ -1,0 +1,274 @@
+{
+  "protein": "EGFR",
+  "pdb_id": "1M17",
+  "description": "Epidermal Growth Factor Receptor - Cancer drug target",
+  "generated_compounds": 10,
+  "comparison": [
+    {
+      "known_compound": "Erlotinib",
+      "known_smiles": "CNC(=O)C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1",
+      "known_activity": 0.2,
+      "top_matches": [
+        {
+          "rank": 1,
+          "generated_smiles": "CC(C)(C)NC(=O)c1ccc(NC(=O)Cc2cccc(F)c2)cc1",
+          "similarity": 0.17073170731707318,
+          "druglikeness": 0.9018012829000001,
+          "binding_affinity": 0.2563867553,
+          "toxicity": 0.24043289
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "COc1ccc(-c2cc(C(=O)NCCC(C)C)[nH]n2)c(C(F)(F)F)c1",
+          "similarity": 0.15384615384615385,
+          "druglikeness": 0.8263216320000001,
+          "binding_affinity": 0.3265347552,
+          "toxicity": 0.23920679
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "CC[NH+](CC)C[C@@H](C)Nc1nc2ccccc2c(=O)n1-c1cccc(F)c1",
+          "similarity": 0.13978494623655913,
+          "druglikeness": 0.6716765828,
+          "binding_affinity": 0.3226189631,
+          "toxicity": 0.2729115
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "CCCCN1C(=O)C(C)(C)Cc2cc(NC(=O)CCCN3C(=O)CCC3=O)ccc21",
+          "similarity": 0.1276595744680851,
+          "druglikeness": 0.6628716025,
+          "binding_affinity": 0.44703099970000004,
+          "toxicity": 0.20612137
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CC(=O)NCCN(C)c1ncc(C(=O)N2CCCC2)cc1C",
+          "similarity": 0.12359550561797752,
+          "druglikeness": 0.8874849117,
+          "binding_affinity": 0.2206824862,
+          "toxicity": 0.20703596
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC[C@@H](CNC(=O)NC[C@H](O)c1ccccc1)N1CCN(c2ccccc2)CC1",
+          "similarity": 0.11363636363636363,
+          "druglikeness": 0.6417073146000001,
+          "binding_affinity": 0.42461658950000003,
+          "toxicity": 0.24097145
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "CCCCN(C[C@H]1CCCO1)C(=O)OC(C)(C)C",
+          "similarity": 0.08139534883720931,
+          "druglikeness": 0.7588657889,
+          "binding_affinity": 0.1226456129,
+          "toxicity": 0.17486964
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CN1C(=O)N=C(N)[C@@H]1[C@H]1CCCC[NH2+]1",
+          "similarity": 0.06097560975609756,
+          "druglikeness": 0.5592622392000001,
+          "binding_affinity": 0.09436124950000001,
+          "toxicity": 0.17548001
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CN1CCN(C(=O)C[NH+]2CCC[C@H]2C[NH+]2CCCC2)CC1",
+          "similarity": 0.05747126436781609,
+          "druglikeness": 0.6005341161000001,
+          "binding_affinity": 0.1491374799,
+          "toxicity": 0.17511569
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC1(C)CC(=O)N([C@H]2CCCN(C(=O)C3CCCC3)C2)CC1=O",
+          "similarity": 0.054945054945054944,
+          "druglikeness": 0.7817135627,
+          "binding_affinity": 0.24069627370000002,
+          "toxicity": 0.1728552
+        }
+      ],
+      "max_similarity": 0.17073170731707318
+    },
+    {
+      "known_compound": "Gefitinib",
+      "known_smiles": "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1",
+      "known_activity": 0.033,
+      "top_matches": [
+        {
+          "rank": 4,
+          "generated_smiles": "CCCCN1C(=O)C(C)(C)Cc2cc(NC(=O)CCCN3C(=O)CCC3=O)ccc21",
+          "similarity": 0.14432989690721648,
+          "druglikeness": 0.6628716025,
+          "binding_affinity": 0.44703099970000004,
+          "toxicity": 0.20612137
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "CC[NH+](CC)C[C@@H](C)Nc1nc2ccccc2c(=O)n1-c1cccc(F)c1",
+          "similarity": 0.1326530612244898,
+          "druglikeness": 0.6716765828,
+          "binding_affinity": 0.3226189631,
+          "toxicity": 0.2729115
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "COc1ccc(-c2cc(C(=O)NCCC(C)C)[nH]n2)c(C(F)(F)F)c1",
+          "similarity": 0.12244897959183673,
+          "druglikeness": 0.8263216320000001,
+          "binding_affinity": 0.3265347552,
+          "toxicity": 0.23920679
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CC(C)(C)NC(=O)c1ccc(NC(=O)Cc2cccc(F)c2)cc1",
+          "similarity": 0.12222222222222222,
+          "druglikeness": 0.9018012829000001,
+          "binding_affinity": 0.2563867553,
+          "toxicity": 0.24043289
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC[C@@H](CNC(=O)NC[C@H](O)c1ccccc1)N1CCN(c2ccccc2)CC1",
+          "similarity": 0.11956521739130435,
+          "druglikeness": 0.6417073146000001,
+          "binding_affinity": 0.42461658950000003,
+          "toxicity": 0.24097145
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CC(=O)NCCN(C)c1ncc(C(=O)N2CCCC2)cc1C",
+          "similarity": 0.11702127659574468,
+          "druglikeness": 0.8874849117,
+          "binding_affinity": 0.2206824862,
+          "toxicity": 0.20703596
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "CCCCN(C[C@H]1CCCO1)C(=O)OC(C)(C)C",
+          "similarity": 0.08888888888888889,
+          "druglikeness": 0.7588657889,
+          "binding_affinity": 0.1226456129,
+          "toxicity": 0.17486964
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CN1C(=O)N=C(N)[C@@H]1[C@H]1CCCC[NH2+]1",
+          "similarity": 0.08235294117647059,
+          "druglikeness": 0.5592622392000001,
+          "binding_affinity": 0.09436124950000001,
+          "toxicity": 0.17548001
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CN1CCN(C(=O)C[NH+]2CCC[C@H]2C[NH+]2CCCC2)CC1",
+          "similarity": 0.06593406593406594,
+          "druglikeness": 0.6005341161000001,
+          "binding_affinity": 0.1491374799,
+          "toxicity": 0.17511569
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC1(C)CC(=O)N([C@H]2CCCN(C(=O)C3CCCC3)C2)CC1=O",
+          "similarity": 0.052083333333333336,
+          "druglikeness": 0.7817135627,
+          "binding_affinity": 0.24069627370000002,
+          "toxicity": 0.1728552
+        }
+      ],
+      "max_similarity": 0.14432989690721648
+    },
+    {
+      "known_compound": "Osimertinib",
+      "known_smiles": "COc1cc(N(C)CCN(C)C)c(NC(=O)C=C)cc1Nc1nccc(-c2cn(C)c3ccccc23)n1",
+      "known_activity": 0.001,
+      "top_matches": [
+        {
+          "rank": 3,
+          "generated_smiles": "CC(=O)NCCN(C)c1ncc(C(=O)N2CCCC2)cc1C",
+          "similarity": 0.16161616161616163,
+          "druglikeness": 0.8874849117,
+          "binding_affinity": 0.2206824862,
+          "toxicity": 0.20703596
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "COc1ccc(-c2cc(C(=O)NCCC(C)C)[nH]n2)c(C(F)(F)F)c1",
+          "similarity": 0.15384615384615385,
+          "druglikeness": 0.8263216320000001,
+          "binding_affinity": 0.3265347552,
+          "toxicity": 0.23920679
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "CC[NH+](CC)C[C@@H](C)Nc1nc2ccccc2c(=O)n1-c1cccc(F)c1",
+          "similarity": 0.1523809523809524,
+          "druglikeness": 0.6716765828,
+          "binding_affinity": 0.3226189631,
+          "toxicity": 0.2729115
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CC(C)(C)NC(=O)c1ccc(NC(=O)Cc2cccc(F)c2)cc1",
+          "similarity": 0.12121212121212122,
+          "druglikeness": 0.9018012829000001,
+          "binding_affinity": 0.2563867553,
+          "toxicity": 0.24043289
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "CCCCN1C(=O)C(C)(C)Cc2cc(NC(=O)CCCN3C(=O)CCC3=O)ccc21",
+          "similarity": 0.12037037037037036,
+          "druglikeness": 0.6628716025,
+          "binding_affinity": 0.44703099970000004,
+          "toxicity": 0.20612137
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC[C@@H](CNC(=O)NC[C@H](O)c1ccccc1)N1CCN(c2ccccc2)CC1",
+          "similarity": 0.1188118811881188,
+          "druglikeness": 0.6417073146000001,
+          "binding_affinity": 0.42461658950000003,
+          "toxicity": 0.24097145
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "CCCCN(C[C@H]1CCCO1)C(=O)OC(C)(C)C",
+          "similarity": 0.10204081632653061,
+          "druglikeness": 0.7588657889,
+          "binding_affinity": 0.1226456129,
+          "toxicity": 0.17486964
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CN1CCN(C(=O)C[NH+]2CCC[C@H]2C[NH+]2CCCC2)CC1",
+          "similarity": 0.08080808080808081,
+          "druglikeness": 0.6005341161000001,
+          "binding_affinity": 0.1491374799,
+          "toxicity": 0.17511569
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC1(C)CC(=O)N([C@H]2CCCN(C(=O)C3CCCC3)C2)CC1=O",
+          "similarity": 0.07766990291262135,
+          "druglikeness": 0.7817135627,
+          "binding_affinity": 0.24069627370000002,
+          "toxicity": 0.1728552
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CN1C(=O)N=C(N)[C@@H]1[C@H]1CCCC[NH2+]1",
+          "similarity": 0.07368421052631578,
+          "druglikeness": 0.5592622392000001,
+          "binding_affinity": 0.09436124950000001,
+          "toxicity": 0.17548001
+        }
+      ],
+      "max_similarity": 0.16161616161616163
+    }
+  ],
+  "avg_max_similarity": 0.15889258861348377,
+  "elapsed_time": 91.22193098068237
+}

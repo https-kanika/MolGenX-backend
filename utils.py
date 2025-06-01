@@ -117,61 +117,87 @@ def get_pdb_id_from_sequence(sequence):
         print(f"Error searching for PDB ID: {str(e)}")
         return None
     
-
-def get_visualization_data(output_dir):
-    """Helper function to get visualization file data"""
-    visualization_data = {
-        'files': {},
-        'compounds': []
+def get_compound_files(output_dir="compound_visualizations"):
+    """
+    Helper function to read visualization files and encode image/PDB data
+    
+    Args:
+        output_dir: Directory containing visualization files
+        
+    Returns:
+        Dictionary with file contents organized by compound
+    """
+    import base64
+    import os
+    
+    compound_data = {
+        "compounds": []
     }
     
     try:
-        # Get all files in output directory
-        for i in range(1, 11):  # Assuming max 10 compounds
-            compound_data = {
-                '2d': None,
-                '3d': {
-                    'pdb': None,
-                    'sdf': None,
-                    'viewer': None
-                }
+        # Check if directory exists
+        if not os.path.exists(output_dir):
+            return {"error": f"Visualization directory {output_dir} not found"}
+            
+        # Get all files in the directory
+        files = os.listdir(output_dir)
+        
+        # Find the maximum compound number
+        compound_nums = []
+        for file in files:
+            if file.startswith("compound_") and "_" in file:
+                try:
+                    num = int(file.split("_")[1])
+                    compound_nums.append(num)
+                except:
+                    pass
+        
+        max_compounds = max(compound_nums) if compound_nums else 0
+        
+        # Process each compound
+        for i in range(1, max_compounds + 1):
+            compound_info = {
+                "id": i,
+                "images": {},
+                "models": {}
             }
             
-            # Get 2D image filename
-            filename_2d = f"compound_{i}_2D.png"
-            if os.path.exists(os.path.join(output_dir, filename_2d)):
-                compound_data['2d'] = filename_2d
+            # Get 2D image
+            image_path = os.path.join(output_dir, f"compound_{i}_2D.png")
+            if os.path.exists(image_path):
+                with open(image_path, "rb") as image_file:
+                    encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+                    compound_info["images"]["2d"] = f"data:image/png;base64,{encoded_image}"
             
-            # Get 3D files
-            pdb_file = f"compound_{i}_3D.pdb"
-            if os.path.exists(os.path.join(output_dir, pdb_file)):
-                with open(os.path.join(output_dir, pdb_file), 'r') as f:
-                    compound_data['3d']['pdb'] = {
-                        'filename': pdb_file,
-                        'content': f.read()
-                    }
+            # Get PDB file
+            pdb_path = os.path.join(output_dir, f"compound_{i}_3D.pdb")
+            if os.path.exists(pdb_path):
+                with open(pdb_path, "r") as pdb_file:
+                    compound_info["models"]["pdb"] = pdb_file.read()
             
-            sdf_file = f"compound_{i}_3D.sdf"
-            if os.path.exists(os.path.join(output_dir, sdf_file)):
-                with open(os.path.join(output_dir, sdf_file), 'r') as f:
-                    compound_data['3d']['sdf'] = {
-                        'filename': sdf_file,
-                        'content': f.read()
-                    }
+            # Get SDF file
+            sdf_path = os.path.join(output_dir, f"compound_{i}_3D.sdf")
+            if os.path.exists(sdf_path):
+                with open(sdf_path, "r") as sdf_file:
+                    compound_info["models"]["sdf"] = sdf_file.read()
             
-            viewer_file = f"compound_{i}_3D_viewer.html"
-            if os.path.exists(os.path.join(output_dir, viewer_file)):
-                compound_data['3d']['viewer'] = viewer_file
-                
-            if any(compound_data.values()):
-                visualization_data['compounds'].append(compound_data)
+            # Add viewer path
+            viewer_path = f"compound_{i}_3D_viewer.html"
+            if os.path.exists(os.path.join(output_dir, viewer_path)):
+                compound_info["models"]["viewer"] = viewer_path
+            
+            # Only add compounds that have at least an image or a model
+            if compound_info["images"] or compound_info["models"]:
+                compound_data["compounds"].append(compound_info)
         
-        # Get grid visualization
-        grid_file = "all_compounds_grid.png"
-        if os.path.exists(os.path.join(output_dir, grid_file)):
-            visualization_data['files']['grid'] = grid_file
-            
+        # Add grid image if available
+        grid_path = os.path.join(output_dir, "all_compounds_grid.png")
+        if os.path.exists(grid_path):
+            with open(grid_path, "rb") as grid_file:
+                encoded_grid = base64.b64encode(grid_file.read()).decode('utf-8')
+                compound_data["grid"] = f"data:image/png;base64,{encoded_grid}"
+        
     except Exception as e:
-        print(f"Error reading visualization files: {str(e)}")
-        
-    return visualization_data
+        return {"error": f"Error processing visualization files: {str(e)}"}
+    
+    return compound_data

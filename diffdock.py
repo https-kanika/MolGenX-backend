@@ -41,13 +41,8 @@ def call_diffdock_api(input_structure, input_pdb, smiles_string, input_ligand,
     return result[0]
 
 if __name__ == "__main__":
-    # Provide local file paths
     pdb_file = "compound_visualizations\\target_protein.pdb"  # Update with your actual local file path
     ligand_file = "compound_visualizations\\compound_1_3D.sdf"  # Update with your actual local file path
-    
-    # Example SMILES
-    smiles = "CC(=O)Nc1ccc(O)cc1"  # Example SMILES 
-    
-    # Call API with local file paths
+    smiles = "CC(=O)Nc1ccc(O)cc1" 
     result = call_diffdock_api("6w70", pdb_file, smiles, ligand_file)
     #print("DiffDock Binding Affinity Results:", result)

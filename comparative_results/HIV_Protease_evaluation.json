@@ -1,0 +1,274 @@
+{
+  "protein": "HIV_Protease",
+  "pdb_id": "6B3S",
+  "description": "HIV-1 Protease - Antiviral target",
+  "generated_compounds": 10,
+  "comparison": [
+    {
+      "known_compound": "Saquinavir",
+      "known_smiles": "CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(O)C(Cc1ccccc1)NC(=O)C(CC(N)=O)NC(=O)c1ccc2ccccc2n1",
+      "known_activity": 0.004,
+      "top_matches": [
+        {
+          "rank": 8,
+          "generated_smiles": "COC(=O)c1ccc(CN2CCO[C@H]3CCCC[C@H]32)cc1",
+          "similarity": 0.16666666666666666,
+          "druglikeness": 0.8018724239,
+          "binding_affinity": 0.1622993972,
+          "toxicity": 0.20753682
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CCC(CC)(CC)CNC(=O)N(C)Cc1ccccc1",
+          "similarity": 0.15625,
+          "druglikeness": 0.800460245,
+          "binding_affinity": 0.1337445737,
+          "toxicity": 0.20719697
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "CCc1ccc(C2=NO[C@H](C(=O)N[C@@H](C)c3ccc(N4C(=O)NC4=O)nc3)C2)cc1",
+          "similarity": 0.14285714285714285,
+          "druglikeness": 0.7643667766000001,
+          "binding_affinity": 0.4155860154,
+          "toxicity": 0.23839062
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "COc1cccc(C[C@H](C)NC(=O)Nc2ccc(OCC(F)F)nc2)c1",
+          "similarity": 0.14035087719298245,
+          "druglikeness": 0.7511731392000001,
+          "binding_affinity": 0.3609747401,
+          "toxicity": 0.24022675000000002
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC(C)CCNC(=O)Nc1cccc(F)c1-c1ccccn1",
+          "similarity": 0.14018691588785046,
+          "druglikeness": 0.8748553361,
+          "binding_affinity": 0.19904784350000002,
+          "toxicity": 0.24075848
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CC(C)(CNC(=O)N1CCCCCCC1)C(=O)Nc1ccc(Br)cc1",
+          "similarity": 0.1346153846153846,
+          "druglikeness": 0.7736222682,
+          "binding_affinity": 0.3924679627,
+          "toxicity": 0.20598885
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "COc1cccc(CNC(=O)NC[C@H](O)c2ccsc2)c1OC",
+          "similarity": 0.10619469026548672,
+          "druglikeness": 0.7247183781000001,
+          "binding_affinity": 0.3128759624,
+          "toxicity": 0.24042013
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CCC(CC)[C@@H]([NH2+]C)c1nccc2cccnc12",
+          "similarity": 0.09803921568627451,
+          "druglikeness": 0.8766307387000001,
+          "binding_affinity": 0.1119004705,
+          "toxicity": 0.24149135
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC1(C)CN(C(=O)CCCn2cnc3cc(F)c(F)cc32)C(C)(C)C1",
+          "similarity": 0.09649122807017543,
+          "druglikeness": 0.8322455438,
+          "binding_affinity": 0.2559576413,
+          "toxicity": 0.2394644
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CCN(CC(=O)Nc1ccc(OC)c(C)c1)C(=O)c1ccc(C)cc1",
+          "similarity": 0.08928571428571429,
+          "druglikeness": 0.8765149478,
+          "binding_affinity": 0.27936234200000004,
+          "toxicity": 0.24068716
+        }
+      ],
+      "max_similarity": 0.16666666666666666
+    },
+    {
+      "known_compound": "Ritonavir",
+      "known_smiles": "CC(C)c1nc(CN(C)C(=O)NC(C(=O)NC(Cc2ccccc2)CC(O)C(Cc2ccccc2)NC(=O)OCc2cncs2)C(C)C)cs1",
+      "known_activity": 0.015,
+      "top_matches": [
+        {
+          "rank": 10,
+          "generated_smiles": "CCC(CC)(CC)CNC(=O)N(C)Cc1ccccc1",
+          "similarity": 0.2247191011235955,
+          "druglikeness": 0.800460245,
+          "binding_affinity": 0.1337445737,
+          "toxicity": 0.20719697
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "COc1cccc(C[C@H](C)NC(=O)Nc2ccc(OCC(F)F)nc2)c1",
+          "similarity": 0.1743119266055046,
+          "druglikeness": 0.7511731392000001,
+          "binding_affinity": 0.3609747401,
+          "toxicity": 0.24022675000000002
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "CCc1ccc(C2=NO[C@H](C(=O)N[C@@H](C)c3ccc(N4C(=O)NC4=O)nc3)C2)cc1",
+          "similarity": 0.1452991452991453,
+          "druglikeness": 0.7643667766000001,
+          "binding_affinity": 0.4155860154,
+          "toxicity": 0.23839062
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC(C)CCNC(=O)Nc1cccc(F)c1-c1ccccn1",
+          "similarity": 0.14285714285714285,
+          "druglikeness": 0.8748553361,
+          "binding_affinity": 0.19904784350000002,
+          "toxicity": 0.24075848
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "COc1cccc(CNC(=O)NC[C@H](O)c2ccsc2)c1OC",
+          "similarity": 0.1388888888888889,
+          "druglikeness": 0.7247183781000001,
+          "binding_affinity": 0.3128759624,
+          "toxicity": 0.24042013
+        },
+        {
+          "rank": 8,
+          "generated_smiles": "COC(=O)c1ccc(CN2CCO[C@H]3CCCC[C@H]32)cc1",
+          "similarity": 0.125,
+          "druglikeness": 0.8018724239,
+          "binding_affinity": 0.1622993972,
+          "toxicity": 0.20753682
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CCN(CC(=O)Nc1ccc(OC)c(C)c1)C(=O)c1ccc(C)cc1",
+          "similarity": 0.10091743119266056,
+          "druglikeness": 0.8765149478,
+          "binding_affinity": 0.27936234200000004,
+          "toxicity": 0.24068716
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CCC(CC)[C@@H]([NH2+]C)c1nccc2cccnc12",
+          "similarity": 0.0891089108910891,
+          "druglikeness": 0.8766307387000001,
+          "binding_affinity": 0.1119004705,
+          "toxicity": 0.24149135
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CC(C)(CNC(=O)N1CCCCCCC1)C(=O)Nc1ccc(Br)cc1",
+          "similarity": 0.08411214953271028,
+          "druglikeness": 0.7736222682,
+          "binding_affinity": 0.3924679627,
+          "toxicity": 0.20598885
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC1(C)CN(C(=O)CCCn2cnc3cc(F)c(F)cc32)C(C)(C)C1",
+          "similarity": 0.06956521739130435,
+          "druglikeness": 0.8322455438,
+          "binding_affinity": 0.2559576413,
+          "toxicity": 0.2394644
+        }
+      ],
+      "max_similarity": 0.2247191011235955
+    },
+    {
+      "known_compound": "Darunavir",
+      "known_smiles": "CC(C)CN(CC(O)C(Cc1ccccc1)NC(=O)OC1COC2CCCCC2O1)S(=O)(=O)C1CC1",
+      "known_activity": 0.0001,
+      "top_matches": [
+        {
+          "rank": 8,
+          "generated_smiles": "COC(=O)c1ccc(CN2CCO[C@H]3CCCC[C@H]32)cc1",
+          "similarity": 0.23529411764705882,
+          "druglikeness": 0.8018724239,
+          "binding_affinity": 0.1622993972,
+          "toxicity": 0.20753682
+        },
+        {
+          "rank": 10,
+          "generated_smiles": "CCC(CC)(CC)CNC(=O)N(C)Cc1ccccc1",
+          "similarity": 0.18292682926829268,
+          "druglikeness": 0.800460245,
+          "binding_affinity": 0.1337445737,
+          "toxicity": 0.20719697
+        },
+        {
+          "rank": 6,
+          "generated_smiles": "CC(C)CCNC(=O)Nc1cccc(F)c1-c1ccccn1",
+          "similarity": 0.17391304347826086,
+          "druglikeness": 0.8748553361,
+          "binding_affinity": 0.19904784350000002,
+          "toxicity": 0.24075848
+        },
+        {
+          "rank": 2,
+          "generated_smiles": "CCc1ccc(C2=NO[C@H](C(=O)N[C@@H](C)c3ccc(N4C(=O)NC4=O)nc3)C2)cc1",
+          "similarity": 0.17307692307692307,
+          "druglikeness": 0.7643667766000001,
+          "binding_affinity": 0.4155860154,
+          "toxicity": 0.23839062
+        },
+        {
+          "rank": 4,
+          "generated_smiles": "COc1cccc(C[C@H](C)NC(=O)Nc2ccc(OCC(F)F)nc2)c1",
+          "similarity": 0.1717171717171717,
+          "druglikeness": 0.7511731392000001,
+          "binding_affinity": 0.3609747401,
+          "toxicity": 0.24022675000000002
+        },
+        {
+          "rank": 7,
+          "generated_smiles": "COc1cccc(CNC(=O)NC[C@H](O)c2ccsc2)c1OC",
+          "similarity": 0.1326530612244898,
+          "druglikeness": 0.7247183781000001,
+          "binding_affinity": 0.3128759624,
+          "toxicity": 0.24042013
+        },
+        {
+          "rank": 3,
+          "generated_smiles": "CCN(CC(=O)Nc1ccc(OC)c(C)c1)C(=O)c1ccc(C)cc1",
+          "similarity": 0.125,
+          "druglikeness": 0.8765149478,
+          "binding_affinity": 0.27936234200000004,
+          "toxicity": 0.24068716
+        },
+        {
+          "rank": 1,
+          "generated_smiles": "CC(C)(CNC(=O)N1CCCCCCC1)C(=O)Nc1ccc(Br)cc1",
+          "similarity": 0.11827956989247312,
+          "druglikeness": 0.7736222682,
+          "binding_affinity": 0.3924679627,
+          "toxicity": 0.20598885
+        },
+        {
+          "rank": 9,
+          "generated_smiles": "CCC(CC)[C@@H]([NH2+]C)c1nccc2cccnc12",
+          "similarity": 0.08888888888888889,
+          "druglikeness": 0.8766307387000001,
+          "binding_affinity": 0.1119004705,
+          "toxicity": 0.24149135
+        },
+        {
+          "rank": 5,
+          "generated_smiles": "CC1(C)CN(C(=O)CCCn2cnc3cc(F)c(F)cc32)C(C)(C)C1",
+          "similarity": 0.08823529411764706,
+          "druglikeness": 0.8322455438,
+          "binding_affinity": 0.2559576413,
+          "toxicity": 0.2394644
+        }
+      ],
+      "max_similarity": 0.23529411764705882
+    }
+  ],
+  "avg_max_similarity": 0.20889329514577368,
+  "elapsed_time": 94.94531154632568
+}
