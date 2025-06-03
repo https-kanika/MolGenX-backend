@@ -181,3 +181,6 @@ compound_visualizations
 compound_visualizations/
 *.csv
 *.log
+
+optimized_drug_candidates.csv
+optimized_variants.csv

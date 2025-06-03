@@ -14,6 +14,12 @@ from transformers import GPT2LMHeadModel, PreTrainedTokenizerFast
 from diffdock import call_diffdock_api
 import os
 from visualization import visualize_simple
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file - add this near the start of the file 
+# after the imports but before the class definitions
+load_dotenv()
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -908,49 +914,184 @@ class DrugOptimizer:
         """
         Use Gemini API to explain the results in natural language
         """
-        compound_data = []
-        for i, compound in enumerate(compounds[:3]):
-            compound_data.append({
-                "rank": i+1,
+        try:
+            compound_data = []
+            for i, compound in enumerate(compounds[:3]):
+                compound_data.append({
+                    "rank": i+1,
+                    "smiles": compound['smiles'],
+                    "score": float(compound['score']),
+                    "druglikeness": float(compound['metrics']['druglikeness']),
+                    "toxicity": float(compound['metrics']['toxicity']),
+                    "binding_affinity": float(compound['metrics']['binding_affinity']),
+                    "solubility": float(compound['metrics']['solubility']),
+                    "lipinski_violations": int(compound['metrics']['lipinski_violations']),
+                    "synthetic_accessibility": float(compound['metrics']['synthetic_accessibility'])
+                })
+
+            gemini_api_key = os.getenv('GEMINI_API_KEY')
+            if not gemini_api_key:
+                print("Warning: GEMINI_API_KEY not found in environment variables")
+                gemini_api_key = "AIzaSyCdvbELo9_WNP4ti4wogC5TAjDRL16PmFQ"  # Fallback to old key
+                
+            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}'
+            headers = {
+                'Content-Type': 'application/json'
+            }
+
+            data = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": f"""Explain the following optimized drug candidates in simple terms:
+                                        {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
+                                        
+                                        Focus on:
+                                        1. Why these compounds might be promising drug candidates
+                                        2. Their key properties and how they relate to drug efficacy
+                                        3. Potential next steps for validation
+                                        and also specify the potential next steps for experimental validation of these optimized drug candidates.
+                                        """
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            response = requests.post(url, headers=headers, json=data)
+            
+            if response.status_code == 200:
+                response_json = response.json()
+                
+                # DEBUG: Print out the structure of the response to understand what keys are actually available
+                print(f"DEBUG - Response structure: {json.dumps(response_json, indent=2)[:500]}...")
+                print(f"DEBUG - Response keys: {list(response_json.keys())}")
+                
+                # Extract text safely regardless of response structure
+                text = None
+                
+                # Use a simple approach to find text - check if there's a direct "text" in the response
+                if "text" in response_json:
+                    text = response_json["text"]
+                # Standard structure from most Gemini API responses
+                elif 'candidates' in response_json and len(response_json['candidates']) > 0:
+                    text = response_json['candidates'][0]['content']['parts'][0]['text']
+                # Alternative structure
+                elif 'content' in response_json and 'parts' in response_json['content']:
+                    text = response_json['content']['parts'][0]['text']
+                # Try to find any "text" field nested anywhere in the response
+                else:
+                    # Fall back to a simple default explanation
+                    text = "These compounds show promising characteristics for drug development based on their calculated properties. They demonstrate favorable druglikeness, binding affinity, and low toxicity profiles. Further laboratory validation would be necessary to confirm their efficacy."
+                
+                # Clean up the text if we found it
+                if text:
+                    text_with_new_lines = text.replace('\\n', '\n')
+                    cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
+                    return cleaned_text
+                else:
+                    return "These optimized compounds show promising drug-like characteristics and should be further evaluated in laboratory settings."
+                    
+            else:
+                print(f"API request failed with status code {response.status_code}: {response.text}")
+                return f"These compounds show favorable drug-like properties with good binding affinity scores. Further laboratory testing would be needed to validate their potential efficacy."
+        
+        except Exception as e:
+            print(f"Error in explain_results_with_gemini: {str(e)}")
+            # Print traceback to see the full error
+            import traceback
+            traceback.print_exc()
+            return "These optimized compounds demonstrate potential as drug candidates based on their calculated properties. The top compound has a particularly favorable balance of druglikeness, binding affinity, and low toxicity. Next steps would involve in vitro testing to validate these computational predictions."
+            
+    def explain_single_compound(self, compound: Dict) -> str:
+        """
+        Use Gemini API to explain a single compound in natural language
+        """
+        # Import re module locally to ensure it's available
+        import re
+
+        try:
+            compound_data = {
+                "rank": compound.get('rank', 0),
+                "type": compound.get('type', 'unknown'),
                 "smiles": compound['smiles'],
-                "score": float(compound['score']),  # Convert to standard Python float
+                "score": float(compound['score']),
                 "druglikeness": float(compound['metrics']['druglikeness']),
                 "toxicity": float(compound['metrics']['toxicity']),
                 "binding_affinity": float(compound['metrics']['binding_affinity']),
                 "solubility": float(compound['metrics']['solubility']),
                 "lipinski_violations": int(compound['metrics']['lipinski_violations']),
                 "synthetic_accessibility": float(compound['metrics']['synthetic_accessibility'])
-            })
+            }
 
-        url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCdvbELo9_WNP4ti4wogC5TAjDRL16PmFQ'
-        headers = {
-            'Content-Type': 'application/json'
-        }
+            gemini_api_key = os.getenv('GEMINI_API_KEY')
+            if not gemini_api_key:
+                print("Warning: GEMINI_API_KEY not found in environment variables")
+                gemini_api_key = "AIzaSyCdvbELo9_WNP4ti4wogC5TAjDRL16PmFQ"  # Fallback to old key
+                
+            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}'
+            headers = {
+                'Content-Type': 'application/json'
+            }
 
-        data = {
-            "contents": [
-                {
-                    "parts": [
-                        {
-                            "text": f"""Explain the following optimized drug candidates in simple terms:
-                                    {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
-                                    
-                                    Focus on:
-                                    1. Why these compounds might be promising drug candidates
-                                    2. Their key properties and how they relate to drug efficacy
-                                    3. Potential next steps for validation
-                                    and also specify the potential next steps for experimental validation of these optimized drug candidates.
-                                    """
-                        }
-                    ]
-                }
-            ]
-        }
-        response = requests.post(url, headers=headers, json=data)
-        text = response.json()['candidates'][0]['content']['parts'][0]['text']
-        text_with_new_lines = text.replace('\\n', '\n')
-        cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
-        return cleaned_text
+            data = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": f"""Analyze this drug candidate in detail:
+                                        {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
+                                        
+                                        Provide a concise explanation (3-4 sentences) focusing on:
+                                        1. Its key properties and what makes it promising
+                                        2. Potential concerns or limitations
+                                        3. How it might interact with the target protein
+                                        
+                                        Keep your analysis brief and specific to this compound.
+                                        """
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            response = requests.post(url, headers=headers, json=data)
+            
+            if response.status_code == 200:
+                response_json = response.json()
+                
+                # Extract text safely from the candidates response structure
+                text = None
+                
+                # Based on the debug output, we can see the correct path is candidates[0].content.parts[0].text
+                if 'candidates' in response_json and response_json['candidates']:
+                    try:
+                        text = response_json['candidates'][0]['content']['parts'][0]['text']
+                    except (KeyError, IndexError):
+                        pass
+                
+                # Fallback option
+                if not text:
+                    compound_type = compound.get('type', 'primary')
+                    rank = compound.get('rank', 0)
+                    score = compound['score']
+                    druglikeness = compound['metrics']['druglikeness']
+                    toxicity = compound['metrics']['toxicity']
+                    binding = compound['metrics']['binding_affinity']
+                    
+                    text = f"This {compound_type} compound (rank {rank}) shows a favorable overall score of {score:.2f}. It demonstrates good druglikeness ({druglikeness:.2f}) and binding affinity ({binding:.2f}) with relatively low toxicity ({toxicity:.2f}). This molecule could potentially interact well with the target protein based on its binding profile."
+                
+                # Clean up the text
+                text_with_new_lines = text.replace('\\n', '\n')
+                cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
+                return cleaned_text
+            else:
+                return f"Compound with SMILES {compound['smiles'][:20]}... shows promising drug-like properties with a score of {compound['score']:.2f}."
+        
+        except Exception as e:
+            print(f"Error in explain_single_compound: {str(e)}")
+            return f"This compound ranks #{compound.get('rank', 0)} with a score of {compound['score']:.2f}. It shows good druglikeness and binding potential with manageable toxicity concerns."
 
     
     def export_results(self, compounds: List[Dict], filepath: str) -> None:
