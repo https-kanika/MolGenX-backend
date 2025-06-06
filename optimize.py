@@ -17,8 +17,6 @@ from visualization import visualize_simple
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file - add this near the start of the file 
-# after the imports but before the class definitions
 load_dotenv()
 
 class NumpyEncoder(json.JSONEncoder):
@@ -888,27 +886,6 @@ class DrugOptimizer:
         except:
             return False
     
-    """def visualize_molecules(self, compounds: List[Dict]) -> None:
-        
-        Generate visualization for top compounds
-        In a real implementation, this would connect to IDX for 3D visualization
-        
-        # This is a placeholder for visualization logic
-        print("Generating visualizations for top compounds...")
-        
-        # In a real implementation, this would:
-        # 1. Generate 3D coordinates for molecules
-        # 2. Connect to Google IDX for immersive visualization
-        # 3. Show protein-ligand interactions if target protein available
-        
-        for i, compound in enumerate(compounds[:5]):
-            mol = compound['molecule']
-            smiles = compound['smiles']
-            score = compound['score']
-            
-            print(f"Compound {i+1}: {smiles}")
-            print(f"Score: {score:.4f}")
-            print("---")"""
     
     def explain_results_with_gemini(self, compounds: List[Dict]) -> str:
         """
@@ -934,7 +911,7 @@ class DrugOptimizer:
                 print("Warning: GEMINI_API_KEY not found in environment variables")
                 gemini_api_key = "AIzaSyCdvbELo9_WNP4ti4wogC5TAjDRL16PmFQ"  # Fallback to old key
                 
-            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}'
+            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}'
             headers = {
                 'Content-Type': 'application/json'
             }
@@ -944,14 +921,29 @@ class DrugOptimizer:
                     {
                         "parts": [
                             {
-                                "text": f"""Explain the following optimized drug candidates in simple terms:
+                                "text": f"""You are exper in pharmaceuticals and drug discovery,
+                                        Analyze these drug candidates for the target protein whose pdb id is {self.pdb_id} {self.target_protein} based on their calculated properties:
                                         {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
-                                        
-                                        Focus on:
-                                        1. Why these compounds might be promising drug candidates
-                                        2. Their key properties and how they relate to drug efficacy
-                                        3. Potential next steps for validation
-                                        and also specify the potential next steps for experimental validation of these optimized drug candidates.
+
+                                        Provide a clear explanation structured as follows:
+
+                                        ## Overview
+                                        - Summarize the key findings and what makes these compounds promising
+                                        - Compare these top candidates, highlighting their relative strengths and weaknesses
+
+                                        ## Compound Analysis
+                                        For each of the top {min(len(compound_data), 3)} compounds:
+                                        - Explain how its specific properties (druglikeness, binding_affinity, etc.) contribute to its potential efficacy
+                                        - Identify any potential concerns based on toxicity or synthetic_accessibility
+                                        - Suggest specific protein-drug interactions that might be occurring based on the structural properties
+
+                                        ## Validation Roadmap
+                                        Outline a 3-stage experimental validation plan:
+                                        1. Initial in vitro testing recommendations
+                                        2. Advanced pre-clinical validation methods
+                                        3. Key considerations for potential clinical trials
+
+                                        Keep your analysis scientifically accurate but accessible to non-specialists.
                                         """
                             }
                         ]
@@ -964,28 +956,20 @@ class DrugOptimizer:
             if response.status_code == 200:
                 response_json = response.json()
                 
-                # DEBUG: Print out the structure of the response to understand what keys are actually available
                 print(f"DEBUG - Response structure: {json.dumps(response_json, indent=2)[:500]}...")
                 print(f"DEBUG - Response keys: {list(response_json.keys())}")
-                
-                # Extract text safely regardless of response structure
                 text = None
-                
-                # Use a simple approach to find text - check if there's a direct "text" in the response
                 if "text" in response_json:
                     text = response_json["text"]
-                # Standard structure from most Gemini API responses
                 elif 'candidates' in response_json and len(response_json['candidates']) > 0:
                     text = response_json['candidates'][0]['content']['parts'][0]['text']
-                # Alternative structure
+                
                 elif 'content' in response_json and 'parts' in response_json['content']:
                     text = response_json['content']['parts'][0]['text']
-                # Try to find any "text" field nested anywhere in the response
+                
                 else:
-                    # Fall back to a simple default explanation
                     text = "These compounds show promising characteristics for drug development based on their calculated properties. They demonstrate favorable druglikeness, binding affinity, and low toxicity profiles. Further laboratory validation would be necessary to confirm their efficacy."
                 
-                # Clean up the text if we found it
                 if text:
                     text_with_new_lines = text.replace('\\n', '\n')
                     cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
@@ -999,7 +983,7 @@ class DrugOptimizer:
         
         except Exception as e:
             print(f"Error in explain_results_with_gemini: {str(e)}")
-            # Print traceback to see the full error
+            
             import traceback
             traceback.print_exc()
             return "These optimized compounds demonstrate potential as drug candidates based on their calculated properties. The top compound has a particularly favorable balance of druglikeness, binding affinity, and low toxicity. Next steps would involve in vitro testing to validate these computational predictions."
@@ -1008,7 +992,6 @@ class DrugOptimizer:
         """
         Use Gemini API to explain a single compound in natural language
         """
-        # Import re module locally to ensure it's available
         import re
 
         try:
@@ -1030,7 +1013,7 @@ class DrugOptimizer:
                 print("Warning: GEMINI_API_KEY not found in environment variables")
                 gemini_api_key = "AIzaSyCdvbELo9_WNP4ti4wogC5TAjDRL16PmFQ"  # Fallback to old key
                 
-            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}'
+            url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}'
             headers = {
                 'Content-Type': 'application/json'
             }
@@ -1040,16 +1023,16 @@ class DrugOptimizer:
                     {
                         "parts": [
                             {
-                                "text": f"""Analyze this drug candidate in detail:
-                                        {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
-                                        
-                                        Provide a concise explanation (3-4 sentences) focusing on:
-                                        1. Its key properties and what makes it promising
-                                        2. Potential concerns or limitations
-                                        3. How it might interact with the target protein
-                                        
-                                        Keep your analysis brief and specific to this compound.
-                                        """
+                                "text": f"""As a pharmaceutical chemist, analyze this drug candidate targeting protein with pdb id as {self.pdb_id or 'unknown protein'} {self.target_protein or 'unknown target protein'} based on its calculated properties:
+                                            {json.dumps(compound_data, cls=NumpyEncoder, indent=2)}
+
+                                            Provide a precise analysis in 3-4 sentences that covers:
+                                            1. Its strongest properties (druglikeness={compound_data['druglikeness']:.2f}, binding_affinity={compound_data['binding_affinity']:.2f}) and mechanism of action
+                                            2. Key concerns to address (toxicity={compound_data['toxicity']:.2f}, synthetic_accessibility={compound_data['synthetic_accessibility']:.2f})
+                                            3. How its molecular structure likely interacts with the target protein binding site
+
+                                            Format as a single paragraph without bullet points. Include one specific recommendation for compound optimization.
+                                            """
                             }
                         ]
                     }
@@ -1060,18 +1043,14 @@ class DrugOptimizer:
             
             if response.status_code == 200:
                 response_json = response.json()
-                
-                # Extract text safely from the candidates response structure
                 text = None
                 
-                # Based on the debug output, we can see the correct path is candidates[0].content.parts[0].text
                 if 'candidates' in response_json and response_json['candidates']:
                     try:
                         text = response_json['candidates'][0]['content']['parts'][0]['text']
                     except (KeyError, IndexError):
                         pass
                 
-                # Fallback option
                 if not text:
                     compound_type = compound.get('type', 'primary')
                     rank = compound.get('rank', 0)
@@ -1082,7 +1061,6 @@ class DrugOptimizer:
                     
                     text = f"This {compound_type} compound (rank {rank}) shows a favorable overall score of {score:.2f}. It demonstrates good druglikeness ({druglikeness:.2f}) and binding affinity ({binding:.2f}) with relatively low toxicity ({toxicity:.2f}). This molecule could potentially interact well with the target protein based on its binding profile."
                 
-                # Clean up the text
                 text_with_new_lines = text.replace('\\n', '\n')
                 cleaned_text = re.sub(r'(\\|##|#|_|[*])', '', text_with_new_lines)
                 return cleaned_text
@@ -1120,7 +1098,7 @@ class DrugOptimizer:
 def get_optimized_variants(protien_sequence,optimized_compounds,optimizer,optimization_params):
     top_compound = optimized_compounds[0]['smiles']
         
-    variants = optimizer.generate_molecular_modifications(top_compound, 10)      #modify this to change the number of variants generated
+    variants = optimizer.generate_molecular_modifications(top_compound, 10) 
     #print(f"Generated {len(variants)} variants of top compound")
 
     variant_optimizer = DrugOptimizer(variants, protien_sequence)  

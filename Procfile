@@ -1,1 +1,0 @@
-web: gunicorn main:app --timeout 300 --workers=4 --threads=4 --worker-class=gevent
