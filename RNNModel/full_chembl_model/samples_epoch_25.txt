@@ -1,0 +1,12 @@
+C=C(C)C1CCCC2(CO)CCC3(C)C(CCC4C5(C)CCC(OC(C)=O)C(C)(C)C5CCC43C)C12 - VALID
+Cc1ccc(C(=O)OCC(=O)NN=c2nc3c(ccn3-c3ccccc3)cc2)cc1 - INVALID
+COc1ccc(CCNC(=O)C(=O)NCCCCCC(=O)O)cc1 - VALID
+COc1ccc(C=NNC(=O)C2CCC(=O)N(Cc3c(C)noc3C)C2)cc1OC - VALID
+Cc1cc(C(=O)N2CCC(CCc3ccccc3)CC2)no1 - VALID
+CCOc1ccc(-c2nc(C)c3c2C(=O)N(CC(=O)NCCC(=O)NC(Cc2ccccc2)C4)C(=O)OCc2ccc(OC)cc2)cc1 - INVALID
+CC(C)C(NC(=O)C(CC1CCCCC1)NC(=O)C(Cc1ccccc1)NC(=O)C(NC(=O)C(N)CCCCNC(=O)OCc1ccccc1)C(=O)O)C(=O)O - VALID
+CC(C)Cc1ccc(C2=C(c3ccc(C#N)cc3)C(=O)N(CCc3cc(F)ccc3OC)C(CCCCC(=O)O)C2=O)cc1 - VALID
+Cc1ccc(CNC(=O)c2cc(COc3ccccc3Cl)oc2C(=O)Nc2ccccc2)cc1 - VALID
+Cc1cc(C)cc(C(=O)N=c2[nH]c(-c3ccccc3C)n(-c3ccccc3)n2)c1 - INVALID
+
+Validity: 7/10 (70%)

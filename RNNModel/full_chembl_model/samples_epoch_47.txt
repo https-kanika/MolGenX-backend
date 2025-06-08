@@ -1,0 +1,12 @@
+COC(=O)CCCSC(=S)N1Cc2cc(Cl)ccc2C1=O - VALID
+CCCN(CCCNC(=O)c1ccc(OC(C)(C)C(=O)O)cc1)C(=O)CSc1nncn1-c1ccccc1 - VALID
+Cc1ccccc1CN(CC(=O)NC(C)(C)C)c1ccccc1Cl - VALID
+COc1ccc(C(=O)C2CCCN(C(=O)c3ccc(OCC(C)C)cc3)C2)cc1 - VALID
+COC(=O)c1cccc(N=c2[nH]c3c(N4CCOCC4C)nc(C(F)(F)F)nn3c2C)c1 - INVALID
+CCC(C(=O)NC1CCCC1)N(C)C(=O)c1cccc(Cl)c1Cl - VALID
+CC1(C)CC(=O)c2cc(NC(=O)C=Cc3ccccc3)ccc2O1 - VALID
+CCOC(=O)c1ccc(N=C(Cc2ccccc2)C(=O)O)cc1 - VALID
+COC(=O)c1ccc2[nH]c(=NC(=S)NCc3ccc(Cl)cc3)c(C)nc2c1 - VALID
+CCOC(=O)NN=C(c1ccccc1)c1ccc(OCCCOc2ccccc2)cc1 - VALID
+
+Validity: 9/10 (90%)

@@ -1,0 +1,12 @@
+CC(C)C(NC(=O)OCc1ccccc1)C(=O)Nc1ccc(C(=O)N2CCCC2c2ccc(F)cc2)cc1 - VALID
+CC(C)(C)NC(=O)CC(=O)NC(=S)NCc1ccc(-c2ccc(F)cc2)cc1 - VALID
+COc1ccc(CCc2ccc(C=C3SC(=N)NC3=O)cc2)cc1 - VALID
+CCOC(=O)C(=O)C(C)N1CCCC(C(N)=O)C1=O - VALID
+Cc1cccc(C(=O)Nc2ccc(S(=O)(=O)N3CC(CF)c4ccccc43)cc2)c1 - VALID
+CC(=O)N1CCN(C(=O)CCC(=O)c2ccc(Cl)cc2)CC1 - VALID
+CC(C)c1ccc(-c2ccc(C(=O)Nc3cccc(C(F)(F)F)c3)nn2)cc1 - VALID
+CC(=O)NCCNc1ccc(NCC(O)COc2ccc(Cl)c(Cl)c2)s1 - VALID
+Cc1ccc(Cn2c(C(C)(C)C)nnc2-c2ccc(OCc3ccccc3)cc2)cc1 - VALID
+Cc1ccc(S(=O)(=O)NC(=O)C=Cc2ccccc2)cc1 - VALID
+
+Validity: 10/10 (100%)

@@ -1,0 +1,12 @@
+CC(=O)N1CCN(C(=O)c2cc(=O)c3c(OC)c(OC)c(OC)cc3[nH]2)CC1 - VALID
+CC(=O)N=c1[nH]c(C2CCCN(S(=O)(=O)c3c(-c4ccccn4)c(Cl)nc3C2)[nH]c2ccccc12)c1ccccc1 - INVALID
+CC1C2COC(c3ccc(O)cc3)(CC1=O)c1ccccc12 - VALID
+COc1ccc(CN2C(=O)N(c3ccc(C(=O)Nc4ccc(OC)c(OC)c4)cc3)C(=O)N2C(=O)C(O)Nc2ccc(Cl)cc2)cc1 - VALID
+COc1cccc(NC(=O)C(C)NC(=O)c2cc(Br)c(Br)c(Br)c2O)c1 - VALID
+CCOC(=O)c1c(C)nc2nc(C)cc(-c3nnc(CC(=O)O)c4ccccc34)c2c1C - VALID
+CCOc1cccc(-c2nn(-c3ccc(OC)c(OC)c3)nc2C2CC2)c1 - VALID
+COc1cccc(C(=O)Nc2ccc(C(=O)N3CCN(c4ccccc4)CC3)cc2)c1 - VALID
+COC(=O)c1ccc(C(=O)Nc2cccc3c2CN(C(=O)C=Cc2c[nH]cn2)c2cc(F)ccc23)cc1 - VALID
+CCCCc1cc(=O)n(-c2ccc(C(=O)N3CCCC3)cc2)o1 - VALID
+
+Validity: 9/10 (90%)
