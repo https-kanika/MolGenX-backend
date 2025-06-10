@@ -47,7 +47,7 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=100
     """
     print(f"Loading data from {filepath}")
     df = pd.read_csv(filepath)
-    df=df[:250000]
+    df=df[:550000]
     
     # Filter out invalid SMILES and sequences
     print("Initial data size:", len(df))
@@ -783,14 +783,14 @@ if __name__ == "__main__":
                         help='Maximum protein sequence length')
     
     # Model parameters
-    parser.add_argument('--embed_dim', type=int, default=32, 
-                        help='Embedding dimension')
-    parser.add_argument('--hidden_dim', type=int, default=128, 
-                        help='Hidden dimension')
-    parser.add_argument('--output_dim', type=int, default=128, 
-                        help='Output dimension')
-    parser.add_argument('--num_layers', type=int, default=1, 
-                        help='Number of LSTM layers for protein encoder')
+    parser.add_argument('--embed_dim', type=int, default=64,  # From 32
+                   help='Embedding dimension')
+    parser.add_argument('--hidden_dim', type=int, default=256,  # From 128
+                       help='Hidden dimension') 
+    parser.add_argument('--output_dim', type=int, default=256,  # From 128
+                       help='Output dimension')
+    parser.add_argument('--num_layers', type=int, default=2,  # From 1
+                       help='Number of LSTM layers for protein encoder')
     
     # Training parameters
     parser.add_argument('--batch_size', type=int, default=32, 

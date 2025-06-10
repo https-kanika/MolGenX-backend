@@ -186,3 +186,4 @@ optimized_drug_candidates.csv
 optimized_variants.csv
 
 protein_visualizations/
+CondRNN/bindingDB.csv

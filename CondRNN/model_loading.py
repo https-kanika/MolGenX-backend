@@ -15,24 +15,29 @@ from conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_mol
 def load_model(model_path, device):
     """Load a trained conditional RNN model"""
     
+    # Check if model_path is a directory or file
+    if os.path.isdir(model_path):
+        model_path = os.path.join(model_path, "best_model.pt")
+        print(f"Model path is a directory, looking for model at: {model_path}")
+    
     print(f"Loading model from {model_path}")
     # Load the saved dictionary
-    checkpoint = torch.load(model_path, map_location=device,weights_only=False)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
     
     # Extract vocab data
     vocab_data = checkpoint['vocab_data']
     
-    # Create models with the right dimensions
+    # Create models with the right dimensions - UPDATED PARAMETERS
     protein_vocab_size = len(vocab_data['protein_char_to_idx'])
     smiles_vocab_size = len(vocab_data['smiles_char_to_idx'])
     
-    # These should match your training parameters
-    embed_dim = 32
-    hidden_dim = 128
-    output_dim = 128
-    num_layers = 1
+    # IMPORTANT: Match these parameters with your training parameters
+    embed_dim = 64     # Increased from 32
+    hidden_dim = 256   # Increased from 128
+    output_dim = 256   # Increased from 128
+    num_layers = 2     # Increased from 1
     
-    # Initialize models
+    # Initialize models with updated parameters
     protein_encoder = ProteinEncoder(
         vocab_size=protein_vocab_size,
         embed_dim=embed_dim,
@@ -44,7 +49,7 @@ def load_model(model_path, device):
     model = ConditionalRNNGenerator(
         vocab_size=smiles_vocab_size,
         embed_dim=embed_dim,
-        hidden_dim=hidden_dim*2,
+        hidden_dim=hidden_dim*2,  # Doubled as in your training code
         target_encoding_dim=output_dim,
         use_affinity=True
     )
