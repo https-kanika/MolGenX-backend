@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from typing import List, Set
-from utils import validate_molecule
+from .utils import validate_molecule
 
 class RNNGenerator(nn.Module):
     def __init__(self, vocab_size, embed_dim, hidden_dim):
