@@ -38,11 +38,18 @@ class DrugOptimizer:
     
     def __init__(self, candidate_smiles: List[str], target_protein: Optional[str] = None, pdb_id: Optional[str] = None):    
         """
-        Initialize the DrugOptimizer with a list of candidate SMILES and optionally a target protein.
-        
-        Args:
-            candidate_smiles: List of SMILES strings representing drug candidates
-            target_protein: Optional sequence of the target protein
+        Initializes the DrugOptimizer with a list of candidate SMILES strings and optional target protein information.
+            candidate_smiles (List[str]): List of SMILES strings representing drug candidate molecules.
+            target_protein (Optional[str], optional): Amino acid sequence of the target protein. Defaults to None.
+            pdb_id (Optional[str], optional): PDB identifier for the target protein structure. Defaults to None.
+        Attributes:
+            candidates (List[str]): Original list of candidate SMILES strings.
+            target_protein (Optional[str]): Sequence of the target protein, if provided.
+            mols (List[rdkit.Chem.Mol]): List of RDKit Mol objects created from valid SMILES strings.
+            valid_indices (List[int]): Indices of valid SMILES strings that could be converted to Mol objects.
+            valid_smiles (List[str]): List of valid SMILES strings corresponding to successfully created Mol objects.
+            metrics_cache (dict): Cache for storing computed metrics.
+            pdb_id (Optional[str]): PDB identifier for the target protein structure, if provided.
         """
         self.candidates = candidate_smiles
         self.target_protein = target_protein
@@ -53,7 +60,16 @@ class DrugOptimizer:
         self.pdb_id = pdb_id
 
     def predict_protein_structure(self):
-        """Predict structure information for the target protein using ESM-2"""
+        """
+        Predicts the structure information for the target protein using the ESM-2 model.
+        This method loads the ESM-2 transformer model and its tokenizer from Hugging Face,
+        processes the target protein sequence (up to 1000 amino acids to avoid memory issues),
+        and generates protein embeddings by mean pooling the last hidden state (excluding special tokens).
+        Returns the resulting sequence embeddings as a tensor, or None if the target protein is not set
+        or an error occurs during prediction.
+        Returns:
+            torch.Tensor or None: The mean-pooled protein sequence embeddings, or None if prediction fails.
+        """
         if not self.target_protein:
             return None
     
@@ -90,7 +106,16 @@ class DrugOptimizer:
 
     def calculate_synthetic_accessibility(self,mol):
         """
-        A more comprehensive synthetic accessibility estimation
+        Estimates the synthetic accessibility of a molecule based on structural features.
+        This method calculates a synthetic accessibility score using several molecular descriptors,
+        including the number of rotatable bonds, rings, spiro atoms, and bridgehead atoms.
+        Each feature contributes to the overall complexity score with a specific weight,
+        reflecting its impact on synthetic difficulty.
+        Parameters:
+            mol (rdkit.Chem.Mol): The molecule object to evaluate.
+        Returns:
+            float: A synthetic accessibility score between 1.0 (easiest) and 10.0 (most difficult).
+                   Returns 10.0 if the input molecule is invalid or None.
         """
         if not mol:
             return 10.0
@@ -110,7 +135,19 @@ class DrugOptimizer:
         return min(max(complexity_score, 1.0), 10.0)
     
     def calculate_lipinski_violations(self, mol) -> int:
-        """Check how many Lipinski's Rule of Five violations exist"""
+        """
+        Calculates the number of Lipinski's Rule of Five violations for a given molecule.
+        Lipinski's Rule of Five is a set of guidelines to evaluate druglikeness, based on the following criteria:
+            - Molecular weight (MW) > 500
+            - LogP (octanol-water partition coefficient) > 5
+            - Number of hydrogen bond donors > 5
+            - Number of hydrogen bond acceptors > 10
+        Each criterion violated increases the violation count by one.
+        Args:
+            mol: An RDKit molecule object to be evaluated.
+        Returns:
+            int: The number of Lipinski's Rule of Five violations for the molecule.
+        """
         violations = 0
         if mol:
             mw = Descriptors.MolWt(mol)
@@ -126,7 +163,23 @@ class DrugOptimizer:
         return violations
     
     def predict_toxicity(self, mol) -> float:
-        """Predict toxicity using IBM's MoLFormer-XL model or fallback to structural alerts"""
+        """
+        Predicts the toxicity of a molecule using IBM's MoLFormer-XL model, with fallbacks to structural alerts and other heuristics.
+        Parameters:
+            mol (rdkit.Chem.Mol): The molecule object to analyze.
+        Returns:
+            float: A normalized toxicity score between 0.0 (non-toxic) and 1.0 (highly toxic).
+        Method:
+            - Converts the molecule to a SMILES string.
+            - Uses the MoLFormer-XL model to generate an embedding for the molecule.
+            - Extracts statistical features from the embedding (mean, standard deviation, norm).
+            - Checks for structural toxicity alerts and PAINS patterns.
+            - Assesses aromatic ring count as a toxicity indicator.
+            - Combines all features into a final toxicity score using weighted contributions.
+            - If the model fails, falls back to a structural alerts-based estimation.
+        Raises:
+            Any exception encountered during model inference is caught, and a fallback method is used.
+        """
         if not mol:
             return 1.0
         
@@ -197,8 +250,18 @@ class DrugOptimizer:
 
     def _check_pains_patterns(self, mol) -> float:
         """
-        Check molecule for PAINS patterns
-        Returns a score between 0 and 1 where higher indicates more problematic PAINS patterns
+        Analyzes a molecule for the presence of PAINS (Pan Assay Interference Compounds) patterns.
+        Parameters:
+            mol: rdkit.Chem.Mol
+                The molecule to be analyzed.
+        Returns:
+            float:
+                A score between 0 and 1 indicating the prevalence of problematic PAINS patterns.
+                A higher score means more PAINS patterns were detected (capped at 3 patterns).
+                Returns 0.0 if no patterns are found or if an error occurs.
+        Notes:
+            - Utilizes RDKit's FilterCatalog with the PAINS filter set.
+            - If an error occurs during processing, the function prints the error and returns 0.0.
         """
         try:
             from rdkit.Chem import FilterCatalog
@@ -224,7 +287,14 @@ class DrugOptimizer:
             return 0.0
     
     def _check_toxicity_alerts(self, mol) -> int:
-        """Check for structural patterns associated with toxicity"""
+        """
+        Checks a molecule for the presence of structural patterns associated with toxicity.
+        This method scans the input molecule for a predefined set of SMARTS patterns that are known to be linked to toxicological concerns, such as DNA/protein binding groups, reactive functional groups, and toxic elements. Each detected pattern increments an alert counter.
+        Args:
+            mol: An RDKit Mol object representing the molecule to be analyzed.
+        Returns:
+            int: The number of toxicity alerts (i.e., the number of toxic patterns found in the molecule).
+        """
         alerts = 0
         toxicity_patterns = [
             # DNA/protein binding (mutagenic/carcinogenic)
@@ -253,7 +323,17 @@ class DrugOptimizer:
         return alerts
         
     def _fallback_toxicity_estimate(self, mol) -> float:
-        """Fallback method for toxicity estimation"""
+        """
+        Estimates the toxicity of a molecule using a simple structural alert heuristic.
+        This fallback method checks for the presence of specific toxicophores (structural alerts)
+        within the given molecule. If the molecule is None or invalid, it returns a maximum toxicity score of 1.0.
+        Otherwise, it counts the number of predefined toxic substructures present and returns a normalized
+        toxicity score between 0.0 and 1.0.
+        Args:
+            mol: An RDKit Mol object representing the molecule to be evaluated.
+        Returns:
+            float: A toxicity score between 0.0 (non-toxic) and 1.0 (highly toxic), based on the number of alerts detected.
+        """
         if not mol:
             return 1.0
             
@@ -272,8 +352,20 @@ class DrugOptimizer:
         return min(alerts / 3.0, 1.0)
     
     def estimate_binding_affinity(self, mol) -> float:
-        """Estimate binding affinity using BioNeMo's DiffDock model"""
-        return self._fallback_binding_estimate(mol)
+        """
+        Estimate the binding affinity of a molecule using BioNeMo's DiffDock model.
+        This method generates 3D structures for the input molecule and the target protein,
+        visualizes them, and then calls the DiffDock API to estimate the binding affinity.
+        If the required protein PDB file is not found, a fallback estimation method is used.
+        Args:
+            mol (rdkit.Chem.Mol): The molecule for which to estimate binding affinity.
+        Returns:
+            float: The normalized binding affinity score, where lower values indicate better binding.
+                   If an error occurs or required files are missing, returns a fallback estimate.
+        Raises:
+            Any exceptions encountered during processing are caught and logged, and the fallback
+            estimation method is used in such cases.
+        """
         try:
 
             smiles = Chem.MolToSmiles(mol)
@@ -332,7 +424,17 @@ class DrugOptimizer:
             return self._fallback_binding_estimate(mol)
         
     def _fallback_binding_estimate(self, mol) -> float:
-        """Fallback method for binding estimation when DiffDock fails"""
+        """
+        Estimates the binding affinity of a molecule using a heuristic scoring function.
+        This fallback method is used when DiffDock fails to provide a binding estimate.
+        The score is calculated based on molecular weight, logP, topological polar surface area (TPSA),
+        and the number of rotatable bonds. The final value is a sigmoid-transformed score representing
+        the estimated binding affinity.
+        Args:
+            mol: An RDKit molecule object to estimate binding for.
+        Returns:
+            float: Estimated binding affinity score in the range (0, 1).
+        """
         if not mol:
             return 0.0
         
@@ -351,7 +453,17 @@ class DrugOptimizer:
         return 1.0 / (1.0 + np.exp(-score/10))
     
     def calculate_solubility(self, mol) -> float:
-        """Estimate aqueous solubility (logS)"""
+        """
+        Estimate the aqueous solubility (logS) of a molecule using the ESOL model.
+        Parameters:
+            mol (rdkit.Chem.Mol): The molecule for which to estimate solubility.
+        Returns:
+            float: The estimated logS (log10 of solubility in mol/L). Returns -5.0 if the molecule is invalid.
+        Notes:
+            The ESOL model is based on the method described in:
+            Delaney, J. S. (2004). "ESOL: Estimating Aqueous Solubility Directly from Molecular Structure."
+            J. Chem. Inf. Comput. Sci., 44(3), 1000-1005.
+        """
         if not mol:
             return -5.0  # Poor solubility as default
             
@@ -371,7 +483,20 @@ class DrugOptimizer:
         return _esol_atom_contribution(mol, log_p, mw)
     
     def calculate_all_metrics(self, mol) -> Dict:
-        """Calculate all drug metrics for a molecule"""
+        """
+        Calculate all drug-related metrics for a given molecule.
+        This method computes a set of predefined metrics for a molecule, including druglikeness, synthetic accessibility, Lipinski's rule violations, toxicity, binding affinity, and solubility. If the molecule is None, default values indicating poor drug properties are returned. Results are cached based on the molecule's SMILES representation to avoid redundant calculations.
+        Args:
+            mol: An RDKit Mol object representing the molecule to evaluate.
+        Returns:
+            Dict: A dictionary containing the following keys and their corresponding metric values:
+                - 'druglikeness' (float): Quantitative estimate of drug-likeness.
+                - 'synthetic_accessibility' (float): Synthetic accessibility score.
+                - 'lipinski_violations' (int): Number of Lipinski's rule of five violations.
+                - 'toxicity' (float): Predicted toxicity score.
+                - 'binding_affinity' (float): Estimated binding affinity.
+                - 'solubility' (float): Predicted solubility.
+        """
         if mol is None:
             return {
                 'druglikeness': 0.0,
@@ -403,15 +528,20 @@ class DrugOptimizer:
     
     def calculate_objective_score(self, mol, weights: Dict[str, float]) -> float:
         """
-        Calculate weighted score based on multiple objectives
-        
-        Args:
-            mol: RDKit molecule object
-            weights: Dictionary of weights for each metric
-                     e.g. {'druglikeness': 1.0, 'toxicity': -1.0, ...}
+        Calculate a weighted objective score for a molecule based on multiple metrics.
+        This function computes an overall score for a given RDKit molecule by evaluating several
+        molecular properties (metrics), normalizing them as needed, and combining them using
+        user-specified weights. Metrics where lower values are better (e.g., synthetic accessibility,
+        Lipinski violations, toxicity) are normalized so that higher normalized values are preferred.
+        Solubility is transformed using a sigmoid function to ensure bounded output.
+            mol: RDKit molecule object to be evaluated.
+            weights (Dict[str, float]): Dictionary mapping metric names to their corresponding weights.
+                Example: {'druglikeness': 1.0, 'toxicity': -1.0, ...}
         
         Returns:
-            float: Overall weighted score (higher is better)
+            float: The overall weighted score for the molecule. Higher scores indicate better
+                overall desirability according to the provided weights. Returns negative infinity
+                if the molecule is None.
         """
         if mol is None:
             return -float('inf')
@@ -432,14 +562,21 @@ class DrugOptimizer:
     
     def optimize(self, optimization_parameters: Dict = None) -> List[Dict]:
         """
-        Perform multi-objective optimization on the drug candidates
-        
-        Args:
-            optimization_parameters: Dictionary with optimization parameters
-                                    including weights for different objectives
-        
-        Returns:
-            List of dictionaries with optimized molecules and their scores
+        Perform multi-objective optimization on the drug candidates.
+        This method evaluates each molecule in the current set using a weighted sum of multiple objectives,
+        such as druglikeness, synthetic accessibility, Lipinski's rule violations, toxicity, binding affinity,
+        and solubility. The weights for each objective and the number of top candidates to return can be
+        customized via the `optimization_parameters` argument.
+            optimization_parameters (Dict, optional): Dictionary containing optimization parameters.
+                - 'weights' (Dict[str, float]): Weights for each objective metric.
+                - 'top_n' (int): Number of top-scoring molecules to return.
+                If not provided, default weights and top_n=10 are used.
+            List[Dict]: A list of dictionaries, each containing:
+                - 'smiles' (str): SMILES representation of the molecule.
+                - 'molecule': The molecule object.
+                - 'score' (float): The computed objective score.
+                - 'metrics' (Dict): All calculated metrics for the molecule.
+            The list is sorted in descending order by score and limited to the top N entries.
         """
         if optimization_parameters is None:
             optimization_parameters = {
@@ -478,19 +615,18 @@ class DrugOptimizer:
 
         return results[:top_n]
     
-    def filter_candidates(self, 
-                         filters: Dict[str, Tuple[float, float]] = None,
-                         compounds: List[Dict] = None) -> List[Dict]:
+    def filter_candidates(self, filters: Dict[str, Tuple[float, float]] = None, compounds: List[Dict] = None) -> List[Dict]:
         """
-        Filter candidates based on property ranges
-        
-        Args:
-            filters: Dictionary of property filters with (min, max) tuple values
-                    e.g. {'druglikeness': (0.5, 1.0), 'toxicity': (0, 0.3)}
-            compounds: List of compounds to filter (if None, uses optimized compounds)
-        
-        Returns:
-            List of filtered compounds
+        Filters a list of compound candidates based on specified property ranges.
+            filters (Dict[str, Tuple[float, float]], optional): 
+                A dictionary specifying the property filters, where each key is a property name 
+                and the value is a (min, max) tuple representing the allowed range for that property.
+                Defaults to a set of common drug-like property ranges if not provided.
+            compounds (List[Dict], optional): 
+                A list of compound dictionaries to filter. If None, the method will use the 
+                result of self.optimize() to obtain compounds.
+            List[Dict]: 
+                A list of compound dictionaries that satisfy all the specified property filters.
         """
         if filters is None:
             filters = {
@@ -525,7 +661,18 @@ class DrugOptimizer:
         return filtered_results
     
     def generate_molecular_modifications(self, smiles: str, num_variants: int = 50) -> List[str]:
-        """Generate structural variations using MolGPT"""
+        """
+        Generate structural variations of a given molecule using the MolGPT model.
+        This method takes a SMILES string as input and generates a specified number of structurally
+        diverse molecular variants using a pretrained MolGPT model. The generated SMILES strings are
+        filtered to ensure validity and uniqueness, and the original input molecule is excluded from
+        the results. If the MolGPT generation fails, a fallback molecule generation method is used.
+        Args:
+            smiles (str): The SMILES string of the input molecule to modify.
+            num_variants (int, optional): The number of molecular variants to generate. Defaults to 50.
+        Returns:
+            List[str]: A list of valid, unique SMILES strings representing molecular modifications of the input.
+        """
         try:
             tokenizer = PreTrainedTokenizerFast.from_pretrained("jonghyunlee/MolGPT_pretrained-by-ZINC15")
             tokenizer.pad_token = "<pad>"
@@ -563,14 +710,14 @@ class DrugOptimizer:
 
     def _fallback_molecule_generation(self, smiles: str, num_variants: int) -> List[str]:
         """
-        Advanced fallback method for molecule generation using sophisticated RDKit modifications
-        
-        Strategies include:
-        1. Functional group transformations
-        2. Ring modifications
-        3. Substituent additions
-        4. Structural rearrangements
-        5. Stereochemistry alterations
+        Generates a list of structurally diverse molecule variants from a given SMILES string using advanced RDKit-based modification strategies.
+        This fallback method applies a variety of chemical modification strategies to the input molecule, including:
+        The function ensures that each generated variant is unique, valid, and structurally distinct from the original molecule. It attempts multiple modifications until the desired number of unique variants is produced or a maximum number of attempts is reached.
+        Args:
+            smiles (str): The SMILES string representing the input molecule.
+            num_variants (int): The number of unique molecule variants to generate.
+        Returns:
+            List[str]: A list of SMILES strings representing the generated molecule variants. Returns an empty list if the input SMILES is invalid or no valid variants can be generated.
         """
         mol = Chem.MolFromSmiles(smiles)
         if not mol:
@@ -615,7 +762,17 @@ class DrugOptimizer:
         return variants
 
     def _add_substituent(self, mol):
-        """Add a substituent to a suitable atom"""
+        """
+        Adds a random substituent group to a suitable atom in the given molecule.
+        This method searches for atoms in the molecule that have available valence (i.e., can form additional bonds)
+        and are not part of a ring. It then randomly selects one of these atoms and attaches a randomly chosen
+        substituent group (e.g., methyl, hydroxyl, fluorine, chlorine, amine, or carboxylic acid) to it.
+        Args:
+            mol (rdkit.Chem.Mol): The input molecule to which a substituent will be added.
+        Returns:
+            rdkit.Chem.Mol or None: A new molecule with the substituent added, or None if no suitable atom is found
+            or if the operation fails.
+        """
         substituents = [
             '[CH3]',   # Methyl
             '[OH]',    # Hydroxyl
@@ -650,7 +807,17 @@ class DrugOptimizer:
             return None
 
     def _replace_functional_group(self, mol):
-        """Replace a functional group with another"""
+        """
+        Replaces specific functional groups in a molecule with alternative groups.
+        This method searches for predefined functional groups (alcohol, amine, carboxylic acid)
+        within the given molecule and replaces the first occurrence found with a corresponding
+        alternative group (e.g., alcohol to ketone, primary amine to secondary amine, carboxylic acid to ester).
+        Args:
+            mol (rdkit.Chem.Mol): The input molecule in which to search and replace functional groups.
+        Returns:
+            rdkit.Chem.Mol or None: A new molecule with the functional group replaced if a match is found,
+            otherwise None if no replacement was made or an error occurred.
+        """
         functional_groups = {
             'alcohol': ('[OH]', '[=O]'),   # Alcohol to ketone
             'amine': ('[NH2]', '[N]'),     # Primary to secondary amine
@@ -673,12 +840,17 @@ class DrugOptimizer:
 
     def _modify_ring_structure(self, mol):
         """
-        Modify ring structure using multiple strategies:
-        1. Ring expansion (n → n+1)
-        2. Ring contraction (n → n-1)
-        3. Aromatization/dearomatization
-        4. Insertion of heteroatoms
-        5. Fusing rings
+        Modify the ring structure of a given RDKit molecule using one of several strategies.
+        This function randomly selects one of the following strategies to modify a ring in the molecule:
+            1. Ring expansion (n → n+1): Increases the size of a selected ring by one atom.
+            2. Ring contraction (n → n-1): Decreases the size of a selected ring by one atom.
+            3. Aromatization/dearomatization: Converts a non-aromatic ring to aromatic (e.g., cyclohexane to benzene) or vice versa.
+            4. Insertion of heteroatoms: Replaces a carbon atom in the ring with a heteroatom (N, O, or S).
+            5. Fusing rings: Attempts to fuse two adjacent rings by creating a new bond between them.
+        Parameters:
+            mol (rdkit.Chem.Mol): The input molecule to be modified.
+        Returns:
+            rdkit.Chem.Mol or None: The modified molecule if the transformation is successful, otherwise None.
         """
         if not mol or mol.GetRingInfo().NumRings() == 0:
             return None
@@ -835,7 +1007,15 @@ class DrugOptimizer:
             return None
 
     def _stereochemistry_modification(self, mol):
-        """Modify stereochemistry of the molecule"""
+        """
+        Modify the stereochemistry of a given molecule by randomly selecting one of its chiral centers
+        and setting its chiral tag to clockwise (CHI_TETRAHEDRAL_CW).
+        Args:
+            mol (rdkit.Chem.Mol): The input molecule whose stereochemistry is to be modified.
+        Returns:
+            rdkit.Chem.Mol or None: A new molecule object with modified stereochemistry at one chiral center,
+            or None if no chiral centers are found or an error occurs.
+        """
         try:
             chiral_centers = Chem.FindMolChiralCenters(mol)
             if chiral_centers:
@@ -850,7 +1030,14 @@ class DrugOptimizer:
         return None
 
     def _structural_rearrangement(self, mol):
-        """Perform structural rearrangement"""
+        """
+        Performs a structural rearrangement on the given molecule by randomly selecting two non-ring atoms 
+        with degree greater than one, removing any existing bond between them, and adding a new single bond.
+        Args:
+            mol (rdkit.Chem.Mol): The input molecule to be rearranged.
+        Returns:
+            rdkit.Chem.Mol or None: The rearranged molecule if successful, otherwise None.
+        """
         try:
             rearrangeable_atoms = [
                 atom.GetIdx() for atom in mol.GetAtoms() 
@@ -869,12 +1056,14 @@ class DrugOptimizer:
 
     def _validate_molecule_properties(self, mol):
         """
-        Validate generated molecule properties
-        
-        Checks:
-        - Molecular weight
-        - Valence rules
-        - Simple drug-likeness criteria
+        Validate the properties of a generated molecule.
+        This function checks whether the given molecule meets specific criteria:
+        - The molecular weight must be between 100 and 600 Daltons.
+        - The molecule must contain no more than 4 rings.
+        Parameters:
+            mol (rdkit.Chem.Mol): The molecule to validate.
+        Returns:
+            bool: True if the molecule satisfies all criteria, False otherwise.
         """
         try:
             mol_weight = Descriptors.ExactMolWt(mol)
@@ -889,8 +1078,14 @@ class DrugOptimizer:
     
     def explain_results_with_gemini(self, compounds: List[Dict]) -> str:
         """
-        Use Gemini API to explain the results in natural language
+        Generates a scientific, accessible explanation of the top drug candidate compounds using the Gemini API.
+        This method analyzes up to the top three compounds based on their calculated properties (such as druglikeness, toxicity, binding affinity, solubility, Lipinski violations, and synthetic accessibility) for a given target protein. It sends a structured prompt to the Gemini language model API, requesting an overview, comparative analysis, compound-specific insights, and a three-stage experimental validation roadmap. The response is processed and cleaned for readability.
+        Args:
+            compounds (List[Dict]): A list of dictionaries, each representing a compound with its SMILES string, score, and a 'metrics' dictionary containing druglikeness, toxicity, binding affinity, solubility, Lipinski violations, and synthetic accessibility.
+        Returns:
+            str: A formatted explanation of the top compounds, including an overview, comparative analysis, compound-specific insights, and validation recommendations. If the API call fails or an error occurs, returns a fallback summary message.
         """
+        
         try:
             compound_data = []
             for i, compound in enumerate(compounds[:3]):
@@ -990,7 +1185,12 @@ class DrugOptimizer:
             
     def explain_single_compound(self, compound: Dict) -> str:
         """
-        Use Gemini API to explain a single compound in natural language
+        Generates a natural language explanation for a single compound using the Gemini API.
+        This method analyzes the provided compound's properties and requests a concise, expert-level summary from the Gemini language model. The explanation covers the compound's strongest attributes, potential concerns, and likely molecular interactions with the target protein, along with a recommendation for optimization. If the API call fails or returns an unexpected response, a fallback summary is generated.
+        Args:
+            compound (Dict): A dictionary containing compound information, including SMILES, score, and various calculated metrics.
+        Returns:
+            str: A cleaned, single-paragraph explanation of the compound's properties and optimization advice.
         """
         import re
 
@@ -1073,7 +1273,19 @@ class DrugOptimizer:
 
     
     def export_results(self, compounds: List[Dict], filepath: str) -> None:
-        """Export results to CSV file"""
+        """
+        Exports a list of compound results to a CSV file.
+        Each compound should be a dictionary containing at least the keys 'smiles', 'score', and 'metrics'.
+        The output CSV will include a rank, SMILES string, score, and all metrics for each compound.
+        Args:
+            compounds (List[Dict]): List of compound dictionaries to export. Each dictionary must contain
+                'smiles' (str), 'score' (float or int), and 'metrics' (dict of metric names to values).
+            filepath (str): Path to the output CSV file.
+        Returns:
+            None
+        Prints:
+            A message indicating whether the results were exported or if there were no compounds to export.
+        """
         if not compounds:
             print("No compounds to export")
             return
@@ -1096,6 +1308,21 @@ class DrugOptimizer:
 
 
 def get_optimized_variants(protien_sequence,optimized_compounds,optimizer,optimization_params):
+    """
+    Generates and optimizes molecular variants based on a top compound and a protein sequence.
+    This function selects the top compound from a list of optimized compounds, generates molecular
+    modifications using the provided optimizer, and further optimizes these variants. The results are
+    sorted by their optimization score, exported to a CSV file, and an explanation is generated.
+    Args:
+        protien_sequence (str): The amino acid sequence of the target protein.
+        optimized_compounds (list): A list of dictionaries containing optimized compounds, each with at least a 'smiles' key.
+        optimizer (object): An object with a `generate_molecular_modifications(smiles, n)` method to generate compound variants.
+        optimization_params (dict): Parameters to control the optimization process.
+    Returns:
+        tuple: A tuple containing:
+            - sorted_variants (list): List of optimized and sorted variant dictionaries.
+            - explanation (str): Explanation of the optimization results.
+    """
     top_compound = optimized_compounds[0]['smiles']
         
     variants = optimizer.generate_molecular_modifications(top_compound, 10) 

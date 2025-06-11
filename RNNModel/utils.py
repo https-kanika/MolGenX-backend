@@ -4,6 +4,25 @@ import pandas as pd
 import os
 
 def return_vocabulary(csv="cleaned_smiles.csv"):
+    """
+    Reads a CSV file containing SMILES strings and generates character-to-index and index-to-character vocabularies.
+
+    Parameters:
+        csv (str): Path to the CSV file containing a 'smiles' column. Defaults to 'cleaned_smiles.csv'.
+
+    Returns:
+        tuple: A tuple containing two dictionaries:
+            - char_to_idx (dict): Mapping from characters to their corresponding indices.
+            - idx_to_char (dict): Mapping from indices to their corresponding characters.
+
+    Raises:
+        FileNotFoundError: If the specified CSV file does not exist.
+        Exception: For other exceptions raised during file reading or vocabulary creation.
+
+    Notes:
+        If the specified CSV file does not contain a 'smiles' column, the function attempts to read from
+        '250k_rndm_zinc_drugs_clean_3.csv' and uses the first column as the source of SMILES strings.
+    """
     try:
         clean_smiles = pd.read_csv(csv)["smiles"].tolist() # Specify the column name
     except KeyError:
@@ -12,7 +31,18 @@ def return_vocabulary(csv="cleaned_smiles.csv"):
     return char_to_idx, idx_to_char
 
 def create_vocabulary(smiles_data):
-    """Create character vocabulary from SMILES strings"""
+    """
+    Creates a character-level vocabulary from a list of SMILES strings.
+    This function generates mappings from characters to indices and vice versa,
+    including all unique characters present in the provided SMILES data. It also
+    adds a special "<PAD>" token mapped to index 0 for padding purposes.
+    Args:
+        smiles_data (list of str): List of SMILES strings to extract characters from.
+    Returns:
+        tuple:
+            - char_to_idx (dict): Mapping from character to unique index (int), with "<PAD>" as 0.
+            - idx_to_char (dict): Mapping from index (int) to character.
+    """
     # Include all possible SMILES characters and special tokens
     chars = set("".join(smiles_data))
     char_to_idx = {char: idx +1 for idx,char in enumerate(sorted(chars))}
@@ -22,8 +52,11 @@ def create_vocabulary(smiles_data):
     return char_to_idx, idx_to_char
 
 def validate_molecule(smiles: str) -> bool:
-    """
-    Validate if the generated SMILES represents a valid molecule
+    """ Validates whether a given SMILES string represents a valid and canonical molecule.
+    This function removes any "<PAD>" tokens from the input SMILES string, attempts to parse it into a molecule object,
+    and checks if the molecule can be successfully canonicalized back to the original SMILES string.
+        smiles (str): The SMILES string to validate.
+        bool: True if the SMILES string is valid and canonical, False otherwise.
     
     Args:
         smiles (str): SMILES string to validate
