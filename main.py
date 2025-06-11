@@ -137,7 +137,7 @@ def find_optimized_candidates():
   # Load Conditional RNN model and generate molecules
   try:
         COND_RNN_MODEL_PATH = os.environ.get('COND_RNN_MODEL_PATH', 
-                                           Path(__file__).parent / "CondRNN/models/best_model.pt")
+                                           Path(__file__).parent / "CondRNN/models_550k/best_model.pt")
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model, protein_encoder, vocab_data = load_cond_rnn_model(COND_RNN_MODEL_PATH, device)
