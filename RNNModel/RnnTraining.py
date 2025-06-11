@@ -22,6 +22,18 @@ char_to_idx, idx_to_char = return_vocabulary()
 max_length = max(len(smiles) for smiles in clean_smiles)
 
 def smiles_to_sequence(smiles):
+    """
+    Converts a SMILES string into a sequence of integer indices, padding the result to a fixed maximum length.
+
+    Args:
+        smiles (str): The SMILES string to be converted.
+
+    Returns:
+        list[int]: A list of integer indices representing the SMILES string, padded with zeros to match max_length.
+
+    Raises:
+        KeyError: If a character in the SMILES string is not found in char_to_idx.
+    """
     return [char_to_idx[char] for char in smiles] + [0] * (max_length - len(smiles))
 
 sequences = np.array([smiles_to_sequence(smi) for smi in clean_smiles])
