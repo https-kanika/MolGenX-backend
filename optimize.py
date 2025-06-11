@@ -366,6 +366,7 @@ class DrugOptimizer:
             Any exceptions encountered during processing are caught and logged, and the fallback
             estimation method is used in such cases.
         """
+        return self._fallback_binding_estimate(mol)
         try:
 
             smiles = Chem.MolToSmiles(mol)
