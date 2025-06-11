@@ -2,14 +2,15 @@ import os
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import requests
-from optimize import DrugOptimizer, get_optimized_variants
 import pandas as pd
-import numpy as np
-from RnnClass import RNNGenerator, generate_diverse_molecules
-from utils import return_vocabulary, get_compound_files
 import torch
-from visualization import visualize_simple
 from pathlib import Path
+from RNNModel.RnnClass import RNNGenerator, generate_diverse_molecules
+from optimize import DrugOptimizer, get_optimized_variants
+from RNNModel.utils import return_vocabulary, get_compound_files
+from visualization import visualize_simple
+from CondRNN.model_loading import load_model as load_cond_rnn_model
+from CondRNN.conditionalRNN import generate_molecules
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {
@@ -104,46 +105,19 @@ def get_protein_visualization(pdb_id):
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
   """
-  Endpoint to find optimized drug candidates based on input protein and SMILES data.
-  Input: 
-    - target protein (can be either amino acid sequence or PDB ID)
-    - weights for optimization metrics
-    - generate_visualizations (optional boolean, default=True): whether to generate compound visualizations
-  
-  Example payload:
-  {
-    "pdb_id": "1M17",
-    "protein": "FKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREA...",
-    "weights": {
-      "druglikeness": 1.0,
-      "synthetic_accessibility": 0.8,
-      "lipinski_violations": 0.7,
-      "toxicity": 1.2,
-      "binding_affinity": 1.5,
-      "solubility": 0.6
-    },
-    "generate_visualizations": true
-  }
-  
-  Output: optimized drug candidates and their properties sorted by score.
-  When visualizations are requested, the images are Base64 encoded and sent as data URLs,
-  The PDB and SDF files are sent as plain text in the JSON response.
   """
   
   if not request.json:
     return jsonify({"error": "Missing input data"}), 400
   
-  if 'pdb_id' not in request.json and 'protein' not in request.json:
-    return jsonify({"error": "Missing protein data or PDB ID"}), 400
+  if 'pdb_id' not in request.json :
+    return jsonify({"error": "Missing protein PDB ID"}), 400
   
-  pdb_id = request.json.get('pdb_id')
-  protein_input = request.json.get('protein', None)
-  
+  pdb_id = request.json.get('pdb_id')  
   generate_visualizations = request.json.get('generate_visualizations', False)
 
-  # Get protein sequence from PDB ID if protein sequence is not provided
-  if protein_input is None:
-    try:
+  # Get protein sequence from PDB ID 
+  try:
       pdb_url = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
       pdb_response = requests.get(pdb_url)
       pdb_response.raise_for_status()
@@ -157,25 +131,54 @@ def find_optimized_candidates():
       if not protein_sequence:
         return jsonify({"error": f"Could not retrieve sequence for PDB ID: {pdb_id}"}), 400
       protein_sequence = protein_sequence.replace(" ", "").replace("\n", "")
-    except Exception as e:
+  except Exception as e:
       return jsonify({"error": f"Failed to fetch sequence for PDB ID {pdb_id}: {str(e)}"}), 400
-  else:
-    protein_sequence = protein_input
 
-  # Load model and generate molecules
-  char_to_idx, idx_to_char = return_vocabulary()
-  device = torch.device("cpu")
-  model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
-  model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
-  model.to(device)
-  diverse_molecules = generate_diverse_molecules(
+  # Load Conditional RNN model and generate molecules
+  try:
+        COND_RNN_MODEL_PATH = os.environ.get('COND_RNN_MODEL_PATH', 
+                                           Path(__file__).parent / "CondRNN/models/best_model.pt")
+        
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model, protein_encoder, vocab_data = load_cond_rnn_model(COND_RNN_MODEL_PATH, device)
+        
+        # Generate molecules with various affinity levels for diversity
+        diverse_molecules = []
+        for affinity in [0.5, 0.7, 0.9]:
+            molecules = generate_molecules(
+                model,
+                protein_encoder,
+                protein_sequence,
+                vocab_data,
+                affinity_value=affinity,
+                # Generate enough molecules for optimization
+                num_molecules=30,  # Generate 30 per affinity level = 90 total
+                device=device,
+                temperature=0.75,  # Slightly lower temperature for more valid structures
+                max_attempts=5
+            )
+            diverse_molecules.extend(molecules)
+            
+        print(f"Generated {len(diverse_molecules)} initial molecules with Conditional RNN")
+        
+  except Exception as e:
+    import traceback
+    traceback.print_exc()
+    # Fall back to the original RNN model if there's an error
+    print(f"Error using Conditional RNN: {str(e)}. Falling back to original RNN generator.")
+    char_to_idx, idx_to_char = return_vocabulary()
+    device = torch.device("cpu")
+    model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.to(device)
+    diverse_molecules = generate_diverse_molecules(
         model, 
         char_to_idx, 
         idx_to_char, 
         device, 
         start_token="C", 
-        num_molecules=10  #modify this to generate more molecules, ideally should be in 1000s
-    )
+        num_molecules=90
+        )
 
   optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
   weights = request.json['weights']

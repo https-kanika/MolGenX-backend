@@ -1,3 +1,14 @@
+"""
+Molecule and Protein Visualization Module
+
+This module provides functions for visualizing chemical compounds and protein 
+structures using RDKit and py3Dmol. It generates 2D and 3D representations
+of molecules and creates interactive HTML visualizations.
+
+Functions:
+    visualize_simple: Generate 2D and 3D visualizations for multiple compounds
+                     and optionally display a target protein structure
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
 import py3Dmol
@@ -7,6 +18,37 @@ import requests
 import shutil
 
 def visualize_simple(compounds, show_protein=True,pdb_id=None):
+    """
+    Generate 2D and 3D visualizations for a list of compounds.
+    
+    For each compound, creates:
+    - 2D molecular representation as PNG
+    - 3D structure files (PDB and SDF formats)
+    - Interactive 3D HTML viewer
+    - Grid image showing all compounds
+    - Optional target protein visualization
+    
+    Args:
+        compounds (list): List of compound dictionaries, each containing:
+            - molecule: RDKit molecule object
+            - smiles: SMILES string representation
+            - score: score for the compound
+            - rank: Optional compound ranking
+            - type: Optional compound type/category
+        
+        show_protein (bool, optional): Whether to visualize target protein.
+                                      Default: True
+        
+        pdb_id (str, optional): PDB ID for target protein structure.
+                               Required if show_protein=True
+    
+    Returns:
+        None: Files are saved to 'compound_visualizations' directory
+    
+    Notes:
+        - Creates and manages the output directory 'compound_visualizations'
+        - Generates interactive HTML files for 3D visualization
+    """
     output_dir = "compound_visualizations"
     if os.path.exists(output_dir):
         try:

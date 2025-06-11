@@ -179,11 +179,11 @@ compound_visualizations
 *.pyc
 .env
 compound_visualizations/
-*.csv
 *.log
 
 optimized_drug_candidates.csv
 optimized_variants.csv
+top_compounds.csv
 
 protein_visualizations/
 CondRNN/bindingDB.csv
