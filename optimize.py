@@ -497,6 +497,7 @@ class DrugOptimizer:
                 - 'toxicity' (float): Predicted toxicity score.
                 - 'binding_affinity' (float): Estimated binding affinity.
                 - 'solubility' (float): Predicted solubility.
+                - 'molecular_weight' (float): Molecular weight of the molecule.
         """
         if mol is None:
             return {
@@ -505,7 +506,8 @@ class DrugOptimizer:
                 'lipinski_violations': 4,
                 'toxicity': 1.0,
                 'binding_affinity': 0.0,
-                'solubility': -5.0
+                'solubility': -5.0,
+                'molecular_weight': 0.0
             }
             
         smiles = Chem.MolToSmiles(mol)
@@ -520,7 +522,8 @@ class DrugOptimizer:
             'lipinski_violations': self.calculate_lipinski_violations(mol),
             'toxicity': self.predict_toxicity(mol),
             'binding_affinity': self.estimate_binding_affinity(mol),
-            'solubility': self.calculate_solubility(mol)
+            'solubility': self.calculate_solubility(mol),
+            'molecular_weight': Descriptors.MolWt(mol)  
         }
 
         self.metrics_cache[smiles] = metrics
