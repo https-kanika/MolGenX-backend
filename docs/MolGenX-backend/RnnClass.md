@@ -1,75 +1,51 @@
-Module MolGenX-backend.RnnClass
-===============================
+# RNNModel/RnnClass.py — Function Documentation
 
-Functions
----------
+## `class RNNGenerator(nn.Module)`
 
-`generate_diverse_molecules(model: torch.nn.modules.module.Module, char_to_idx: dict, idx_to_char: dict, device: torch.device, start_token: str = 'C', num_molecules: int = 10, max_length: int = 100, max_attempts: int = 100) ‑> List[str]`
-:   Generate multiple unique and valid molecules
-    
-    Args:
-        model (nn.Module): Trained RNN model
-        char_to_idx (dict): Character to index mapping
-        idx_to_char (dict): Index to character mapping
-        device (torch.device): Device to run model on
-        start_token (str): Starting token for molecule generation
-        num_molecules (int): Number of unique molecules to generate
-        max_length (int): Maximum length of molecule SMILES
-        max_attempts (int): Maximum generation attempts
-    
-    Returns:
-        List[str]: List of unique valid molecules
+A PyTorch neural network module for generating molecular SMILES sequences using an RNN (LSTM) architecture.
 
-Classes
--------
+### `__init__(self, vocab_size, embed_dim, hidden_dim)`
+Initializes the RNNGenerator model.
 
-`RNNGenerator(vocab_size, embed_dim, hidden_dim)`
-:   Base class for all neural network modules.
-    
-    Your models should also subclass this class.
-    
-    Modules can also contain other Modules, allowing to nest them in
-    a tree structure. You can assign the submodules as regular attributes::
-    
-        import torch.nn as nn
-        import torch.nn.functional as F
-    
-        class Model(nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.conv1 = nn.Conv2d(1, 20, 5)
-                self.conv2 = nn.Conv2d(20, 20, 5)
-    
-            def forward(self, x):
-                x = F.relu(self.conv1(x))
-                return F.relu(self.conv2(x))
-    
-    Submodules assigned in this way will be registered, and will have their
-    parameters converted too when you call :meth:`to`, etc.
-    
-    .. note::
-        As per the example above, an ``__init__()`` call to the parent class
-        must be made before assignment on the child.
-    
-    :ivar training: Boolean represents whether this module is in training or
-                    evaluation mode.
-    :vartype training: bool
-    
-    Initialize internal Module state, shared by both nn.Module and ScriptModule.
+**Parameters:**
+- `vocab_size` (`int`): Number of unique tokens in the vocabulary.
+- `embed_dim` (`int`): Dimension of the embedding vectors.
+- `hidden_dim` (`int`): Dimension of the LSTM hidden state.
 
-    ### Ancestors (in MRO)
+---
 
-    * torch.nn.modules.module.Module
+### `forward(self, x)`
+Defines the forward pass of the RNNGenerator.
 
-    ### Methods
+**Parameters:**
+- `x` (`torch.Tensor`): Input tensor of token indices.
 
-    `forward(self, x) ‑> Callable[..., Any]`
-    :   Define the computation performed at every call.
-        
-        Should be overridden by all subclasses.
-        
-        .. note::
-            Although the recipe for forward pass needs to be defined within
-            this function, one should call the :class:`Module` instance afterwards
-            instead of this since the former takes care of running the
-            registered hooks while the latter silently ignores them.
+**Returns:**
+- `torch.Tensor`: Output logits for each token in the vocabulary.
+
+---
+
+## `generate_diverse_molecules(model, char_to_idx, idx_to_char, device, start_token="C", num_molecules=10, max_length=100, max_attempts=100)`
+
+Generates multiple unique and valid molecular SMILES strings using a trained RNN model.
+
+**Parameters:**
+- `model` (`nn.Module`): Trained RNN model for sequence generation.
+- `char_to_idx` (`dict`): Mapping from characters to indices.
+- `idx_to_char` (`dict`): Mapping from indices to characters.
+- `device` (`torch.device`): Device to run the model on (CPU or CUDA).
+- `start_token` (`str`, default `"C"`): Starting token for molecule generation.
+- `num_molecules` (`int`, default `10`): Number of unique molecules to generate.
+- `max_length` (`int`, default `100`): Maximum length of each generated SMILES string.
+- `max_attempts` (`int`, default `100`): Maximum number of generation attempts.
+
+**Returns:**
+- `List[str]`: List of unique, valid SMILES strings.
+
+**Behavior:**
+- Uses temperature-based sampling for diversity.
+- Stops generation on `<PAD>` token or reaching `max_length`.
+- Validates generated SMILES and ensures uniqueness.
+- Returns up to `num_molecules` valid, unique SMILES strings.
+
+---

@@ -1,62 +1,66 @@
-Module MolGenX-backend.RnnTraining
-==================================
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from tqdm import tqdm
-from RnnClass import RNNGenerator
-from utils import return_vocabulary
-from data_cleaning import preprocess_smiles
-import pandas as pd
-import numpy as np
+# # RNNModel/RnnTraining.py — File Documentation
 
-clean_smiles=[]
-smiles=pd.read_csv('250k_rndm_zinc_drugs_clean_3.csv')
-smiles.drop(columns=['logP','qed','SAS'], inplace=True)
-smiles_list = smiles['smiles'].tolist()
+This script preprocesses a dataset of SMILES strings, encodes them for RNN training, and trains an RNN-based generative model for molecular SMILES sequences.
 
-# Preprocess the SMILES strings
-clean_smiles = preprocess_smiles(smiles_list)
-print(clean_smiles[:5])
-pd.DataFrame(clean_smiles, columns=["smiles"]).to_csv("cleaned_smiles.csv", index=False)
+---
 
-char_to_idx, idx_to_char = return_vocabulary()
-max_length = max(len(smiles) for smiles in clean_smiles)
+## Workflow Overview
 
-def smiles_to_sequence(smiles):
-    return [char_to_idx[char] for char in smiles] + [0] * (max_length - len(smiles))
+1. **Imports**  
+   Loads required libraries for deep learning (PyTorch), data handling (pandas, numpy), and utility modules for SMILES processing and model definition.
 
-sequences = np.array([smiles_to_sequence(smi) for smi in clean_smiles])
+2. **Data Loading and Preprocessing**
+   - Reads a CSV file (`250k_rndm_zinc_drugs_clean_3.csv`) containing SMILES strings.
+   - Drops unnecessary columns (`logP`, `qed`, `SAS`).
+   - Extracts the SMILES column as a list.
+   - Cleans and canonicalizes SMILES using `preprocess_smiles`.
+   - Saves the cleaned SMILES to `cleaned_smiles.csv`.
 
-model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
+3. **Vocabulary Construction**
+   - Builds character-to-index and index-to-character mappings using `return_vocabulary`.
+   - Determines the maximum SMILES length in the cleaned dataset.
 
-train_data = torch.tensor(sequences, dtype=torch.long)
+4. **SMILES Encoding**
+   - Defines `smiles_to_sequence(smiles)`, which converts a SMILES string to a list of integer indices, padded to `max_length`.
+   - Encodes all cleaned SMILES into a numpy array of sequences.
 
-# Define loss and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+5. **Model Setup**
+   - Initializes an `RNNGenerator` model with the vocabulary size, embedding dimension, and hidden dimension.
+   - Converts the encoded sequences to a PyTorch tensor for training.
 
-# Training loop
-num_epochs = 10
-batch_size = 64
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+6. **Training Preparation**
+   - Sets up the loss function (`CrossEntropyLoss`) and optimizer (`Adam`).
+   - Moves the model to the appropriate device (CPU or CUDA).
 
-for epoch in range(num_epochs):
-    total_loss = 0
-    for i in tqdm(range(0, len(train_data), batch_size)):
-        batch = train_data[i : i + batch_size].to(device)
-        inputs, targets = batch[:, :-1], batch[:, 1:]  # Shifted sequence
-        outputs = model(inputs)
-        
-        loss = criterion(outputs.view(-1, len(char_to_idx)), targets.reshape(-1))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        total_loss += loss.item()
+7. **Training Loop**
+   - Trains the model for a specified number of epochs (`num_epochs`).
+   - Uses mini-batches (`batch_size`) and teacher forcing (input/target shifting).
+   - Computes loss, performs backpropagation, and updates model weights.
+   - Prints average loss per epoch.
 
-    print(f"Epoch {epoch+1}/{num_epochs}, Loss: {total_loss / len(train_data)}")
+8. **Model Saving**
+   - Saves the trained model weights to `rnn_model.pth`.
 
-# Save model
-torch.save(model.state_dict(), "rnn_model.pth")
+---
+
+## Defined Functions
+
+### `smiles_to_sequence(smiles)`
+Converts a SMILES string into a sequence of integer indices, padding the result to a fixed maximum length.
+
+**Parameters:**
+- `smiles` (`str`): The SMILES string to be converted.
+
+**Returns:**
+- `list[int]`: List of integer indices representing the SMILES string, padded with zeros to match `max_length`.
+
+**Raises:**
+- `KeyError`: If a character in the SMILES string is not found in `char_to_idx`.
+
+---
+
+## Notes
+
+- All other logic in this file is procedural and not encapsulated in functions or classes.
+- The script expects the input CSV file to be present in the working directory.
+- The model and cleaned SMILES are saved to disk for later use.
