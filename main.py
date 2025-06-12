@@ -105,6 +105,18 @@ def get_protein_visualization(pdb_id):
 @app.route("/api/optimize", methods=["POST"])
 def find_optimized_candidates():
   """
+  Endpoint to find optimized drug candidates based on input protein and parameters.
+  
+  Accepts:
+    - pdb_id: PDB ID of the target protein
+    - weights: Weights for different optimization properties
+      druglikeness, synthetic_accessibility, lipinski_violations, toxicity, binding_affinity, solubility
+    - num_compounds: Number of compounds to return (default: 20)
+    - binding_affinity: Target binding affinity level (default: 0.7)
+    - generate_visualizations: Whether to generate visualizations (default: False)
+  
+  Returns:
+    JSON with optimized compounds, explanations, and optional visualizations
   """
   
   if not request.json:
@@ -115,7 +127,10 @@ def find_optimized_candidates():
   
   pdb_id = request.json.get('pdb_id')  
   generate_visualizations = request.json.get('generate_visualizations', False)
-
+  num_compounds = min(50, max(1, int(request.json.get('num_compounds', 20))))  
+  binding_affinity = min(1.0, max(0.1, float(request.json.get('binding_affinity', 0.7))))  
+  molecules_per_level = max(40, num_compounds)
+  
   # Get protein sequence from PDB ID 
   try:
       pdb_url = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
@@ -142,19 +157,37 @@ def find_optimized_candidates():
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model, protein_encoder, vocab_data = load_cond_rnn_model(COND_RNN_MODEL_PATH, device)
         
-        # Generate molecules with various affinity levels for diversity
+        # Generate molecules with focus on the user's requested binding affinity
+        # plus some molecules at other affinities for diversity
         diverse_molecules = []
-        for affinity in [0.5, 0.7, 0.9]:
+        
+        # Primary generation at requested affinity (60% of molecules)
+        molecules = generate_molecules(
+            model,
+            protein_encoder,
+            protein_sequence,
+            vocab_data,
+            affinity_value=binding_affinity,
+            num_molecules=int(molecules_per_level * 0.6),
+            device=device,
+            temperature=0.75,
+            max_attempts=5
+        )
+        diverse_molecules.extend(molecules)
+        # Generate some molecules at higher and lower affinities for diversity (20% each)
+        lower_affinity = max(0.1, binding_affinity - 0.2)
+        higher_affinity = min(0.95, binding_affinity + 0.2)
+        
+        for affinity in [lower_affinity, higher_affinity]:
             molecules = generate_molecules(
                 model,
                 protein_encoder,
                 protein_sequence,
                 vocab_data,
                 affinity_value=affinity,
-                # Generate enough molecules for optimization
-                num_molecules=30,  # Generate 30 per affinity level = 90 total
+                num_molecules=int(molecules_per_level * 0.2),
                 device=device,
-                temperature=0.75,  # Slightly lower temperature for more valid structures
+                temperature=0.75,
                 max_attempts=5
             )
             diverse_molecules.extend(molecules)
@@ -177,14 +210,14 @@ def find_optimized_candidates():
         idx_to_char, 
         device, 
         start_token="C", 
-        num_molecules=90
-        )
+        num_molecules=molecules_per_level
+    )
 
   optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
   weights = request.json['weights']
   optimization_params = {
         'weights': weights,
-        'top_n': 10
+        'top_n': min(num_compounds // 2, 10)  
     }
 
   optimized_compounds = optimizer.optimize(optimization_params)
@@ -192,10 +225,11 @@ def find_optimized_candidates():
   
   all_compounds = optimized_compounds + optimized_variants
   all_compounds.sort(key=lambda x: x['score'], reverse=True)
-  top_compounds = all_compounds[:20]
+  top_compounds = all_compounds[:num_compounds] 
   for i, compound in enumerate(top_compounds):
     compound['rank'] = i + 1
     compound['type'] = 'primary' if compound in optimized_compounds else 'variant'
+    compound['requested_affinity'] = binding_affinity  
   
   optimizer.export_results(top_compounds, "top_compounds.csv")
   
@@ -204,7 +238,7 @@ def find_optimized_candidates():
     explanation = optimizer.explain_single_compound(compound)
     compound_explanations[f"compound_{i+1}"] = explanation
   
-  overall_explanation = optimizer.explain_results_with_gemini(top_compounds[:3])
+  overall_explanation = optimizer.explain_results_with_gemini(top_compounds[:min(3, len(top_compounds))])
   
   df = pd.read_csv("top_compounds.csv")
   serialized_compounds = df.to_json(orient="records")
@@ -218,6 +252,10 @@ def find_optimized_candidates():
     "optimized_compounds": serialized_compounds,
     "explanation": overall_explanation,
     "compound_explanations": compound_explanations,
+    "requested_parameters": {
+        "num_compounds": num_compounds,
+        "binding_affinity": binding_affinity
+    }
   }
   
   if generate_visualizations:
