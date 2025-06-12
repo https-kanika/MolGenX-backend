@@ -724,9 +724,13 @@ def generate_molecules(
         
         for smiles in generated_smiles:
             if validate_molecule(smiles) and smiles not in valid_molecules:
-                valid_molecules.append(smiles)
                 if len(valid_molecules) >= num_molecules:
                     break
+                mol = Chem.MolFromSmiles(smiles)
+                from rdkit.Chem import QED
+                if mol and QED.qed(mol) > 0.3 :
+                    valid_molecules.append(smiles)
+                
         
         attempt += 1
     

@@ -158,7 +158,7 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
         for smi in molecules:
             try:
                 mol = Chem.MolFromSmiles(smi)
-                if mol and QED.qed(mol) > 0.5 and smi not in filtered_molecules:
+                if mol and QED.qed(mol) > 0.3 and smi not in filtered_molecules:
                     filtered_molecules.append(smi)
                     if len(filtered_molecules) >= n_molecules:
                         break
