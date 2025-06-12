@@ -124,6 +124,7 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
         - The function handles both direct sequence input and sequence files.
         - Only valid molecules (according to RDKit) are included in the results.
     """
+    from rdkit.Chem import QED
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     model, protein_encoder, vocab_data = load_model(model_path, device)
@@ -136,25 +137,44 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
     
     print(f"Target sequence length: {len(target_sequence)}")
     print(f"Generating {n_molecules} molecules with affinity {affinity}...")
-    molecules = generate_molecules(
-        model,
-        protein_encoder,
-        target_sequence,
-        vocab_data,
-        affinity_value=affinity,
-        num_molecules=n_molecules,
-        device=device,
-        temperature=0.7,
-        max_attempts=5
-    )
     
+    filtered_molecules = []
+    attempts = 0
+    max_attempts = 100
+    while len(filtered_molecules) < n_molecules and attempts < max_attempts:
+        needed = n_molecules - len(filtered_molecules)
+        molecules = generate_molecules(
+            model,
+            protein_encoder,
+            target_sequence,
+            vocab_data,
+            affinity_value=affinity,
+            num_molecules=needed,  # Generate more to increase chance
+            device=device,
+            temperature=0.7,
+            max_attempts=5
+        )
+        # Filter for QED > 0.3 and uniqueness
+        for smi in molecules:
+            try:
+                mol = Chem.MolFromSmiles(smi)
+                if mol and QED.qed(mol) > 0.3 and smi not in filtered_molecules:
+                    filtered_molecules.append(smi)
+                    if len(filtered_molecules) >= n_molecules:
+                        break
+            except Exception:
+                continue
+        attempts += 1
+
+    if len(filtered_molecules) < n_molecules:
+        print(f"Warning: Only generated {len(filtered_molecules)} molecules with QED > 0.5 after {attempts} attempts.")
+
     os.makedirs(output_folder, exist_ok=True)
-    
-    output_file = os.path.join(output_folder, "generated_molecules.csv")
-    pd.DataFrame({"SMILES": molecules}).to_csv(output_file, index=False)
-    print(f"Generated {len(molecules)} molecules, saved to {output_file}")
-    
-    return molecules
+    output_file = os.path.join(output_folder, "generated_molecules_qed05.csv")
+    pd.DataFrame({"SMILES": filtered_molecules}).to_csv(output_file, index=False)
+    print(f"Generated {len(filtered_molecules)} molecules with QED > 0.5, saved to {output_file}")
+
+    return filtered_molecules
 
 
 def evaluate_generation_quality(model, protein_encoder, vocab_data, test_proteins=None, n_molecules=100, device='cuda'):
