@@ -37,7 +37,7 @@ pip install -r requirements.txt
 ```
 
 ### API Endpoints
-POST /api/optimize - Optimize drug candidates based on protein targets <br>
-GET /api/protein/{pdb_id} - Get protein visualization data for a given PDB ID
+POST /api/optimize - Optimize drug candidates based on protein targets </br>
+GET /api/protein/{pdb_id} - Get protein visualization data for a given PDB ID </br>
     ```
 ### Refer to docs for more details
