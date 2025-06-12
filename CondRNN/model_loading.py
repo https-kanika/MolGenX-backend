@@ -25,7 +25,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 import os
-from conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_molecules
+from .conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_molecules
 
 def load_model(model_path, device):
     """
@@ -154,11 +154,11 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
             temperature=0.7,
             max_attempts=5
         )
-        # Filter for QED > 0.3 and uniqueness
+        # Filter for QED > 0.5 and uniqueness
         for smi in molecules:
             try:
                 mol = Chem.MolFromSmiles(smi)
-                if mol and QED.qed(mol) > 0.3 and smi not in filtered_molecules:
+                if mol and QED.qed(mol) > 0.5 and smi not in filtered_molecules:
                     filtered_molecules.append(smi)
                     if len(filtered_molecules) >= n_molecules:
                         break
