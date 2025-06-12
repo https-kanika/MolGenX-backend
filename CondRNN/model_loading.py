@@ -25,7 +25,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 import os
-from .conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_molecules
+from conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_molecules
 
 def load_model(model_path, device):
     """
