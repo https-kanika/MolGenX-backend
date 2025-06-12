@@ -113,6 +113,7 @@ def find_optimized_candidates():
       druglikeness, synthetic_accessibility, lipinski_violations, toxicity, binding_affinity, solubility
     - num_compounds: Number of compounds to return (default: 20)
     - binding_affinity: Target binding affinity level (default: 0.7)
+      note: should be between 0.1 and 1.0 as this is log normalized IC50 value
     - generate_visualizations: Whether to generate visualizations (default: False)
   
   Returns:
