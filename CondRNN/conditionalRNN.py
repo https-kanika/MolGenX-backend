@@ -736,6 +736,7 @@ def generate_molecules(
     
     return list(set(valid_molecules))[:num_molecules]
 
+# Add new argument in the parser section
 def main(args):
     """
     Main function to run the conditional RNN training pipeline.
@@ -770,13 +771,14 @@ def main(args):
         max_smiles_length=args.max_smiles_len,
         max_protein_length=args.max_protein_len
     )
-    
+
+    # Using the include_affinity parameter from arguments
     train_loader, val_loader, test_loader = create_dataloaders(
         train_df, val_df, test_df, vocab_data, 
         batch_size=args.batch_size,
         max_smiles_len=args.max_smiles_len, 
         max_protein_len=args.max_protein_len,
-        include_affinity=True, 
+        include_affinity=args.use_affinity,  # Use the parameter from args
         num_workers=args.num_workers
     )
     
@@ -796,7 +798,7 @@ def main(args):
         embed_dim=args.embed_dim,
         hidden_dim=args.hidden_dim*2,  
         target_encoding_dim=args.output_dim,
-        use_affinity=True
+        use_affinity=args.use_affinity  # Use the parameter from args
     )
     
     model, protein_encoder = train_model(
@@ -809,7 +811,7 @@ def main(args):
         epochs=args.epochs,
         lr=args.learning_rate,
         save_dir=args.save_dir,
-        include_affinity=True,
+        include_affinity=args.use_affinity,  # Use the parameter from args
         use_amp=args.use_amp,
         gradient_accumulation_steps=args.gradient_accumulation
     )
@@ -821,7 +823,7 @@ def main(args):
             protein_encoder,
             example_protein,
             vocab_data,
-            affinity_value=0.7,
+            affinity_value=0.7 if args.use_affinity else None,  # Only use if affinity is enabled
             num_molecules=10,
             device=device
         )
@@ -831,45 +833,6 @@ def main(args):
             print(mol)
 
 if __name__ == "__main__":
-    """
-    Main function to run the conditional RNN training pipeline.
-    
-    This function serves as the entry point for the training process, orchestrating
-    the complete workflow from data loading to model training and evaluation.
-    It handles device setup, data preprocessing, model initialization, training,
-    and optional molecule generation evaluation.
-    
-    Steps performed:
-    1. Set up computation device (CPU/CUDA) and optimize settings
-    2. Load and preprocess the BindingDB dataset
-    3. Create data loaders for training, validation, and testing
-    4. Initialize protein encoder and conditional RNN generator models
-    5. Train the models and save checkpoints
-    6. Optionally generate example molecules after training
-    
-    Args:
-        args (argparse.Namespace): Command-line arguments parsed by argparse:
-            - data_path: Path to input dataset
-            - max_smiles_len: Maximum SMILES string length
-            - max_protein_len: Maximum protein sequence length
-            - embed_dim: Dimension of embedding vectors
-            - hidden_dim: Hidden dimension of LSTM
-            - output_dim: Output dimension of protein encoder
-            - num_layers: Number of LSTM layers for protein encoder
-            - batch_size: Training batch size
-            - epochs: Number of training epochs
-            - learning_rate: Initial learning rate
-            - gradient_accumulation: Steps to accumulate gradients
-            - num_workers: Number of data loader workers
-            - use_amp: Whether to use automatic mixed precision
-            - save_dir: Directory to save model checkpoints
-            - generate_examples: Whether to generate example molecules after training
-    
-    Notes:
-        - CUDA optimizations are applied when available (TF32, benchmark mode)
-        - Model parameters (dimensions, layers) are passed from command line arguments
-        - When generate_examples=True, molecules are generated for the first test protein
-    """
     parser = argparse.ArgumentParser(description='Train conditional RNN for molecule generation')
     
     # Data parameters
@@ -903,6 +866,10 @@ if __name__ == "__main__":
                         help='Number of data loader workers')
     parser.add_argument('--use_amp', action='store_true', 
                         help='Use automatic mixed precision')
+    
+    # NEW: Add argument for optional binding affinity
+    parser.add_argument('--use_affinity', action='store_true', 
+                        help='Use binding affinity values during training and generation')
     
     # Output parameters
     parser.add_argument('--save_dir', type=str, default='./models', 

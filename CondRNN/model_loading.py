@@ -17,6 +17,9 @@ Example usage:
     
     # Evaluate model performance
     python model_loading.py --target dummy --evaluate
+    
+    # Generate molecules with a model trained without affinity values
+    python model_loading.py --target "PROTEIN_SEQUENCE" --model_path ./models_no_affinity --n_molecules 10 --no_affinity
 """
 
 import torch
@@ -25,9 +28,9 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 import os
-from .conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_molecules
+from conditionalRNN import ProteinEncoder, ConditionalRNNGenerator, generate_molecules
 
-def load_model(model_path, device):
+def load_model(model_path, device, use_affinity=True):
     """
     Load a trained conditional RNN molecule generation model from a checkpoint file.
     
@@ -39,6 +42,8 @@ def load_model(model_path, device):
         model_path (str): Path to the model checkpoint file or directory containing 
                          'best_model.pt'.
         device (torch.device): Device to load the model onto (CPU or CUDA).
+        use_affinity (bool, optional): Whether the model was trained with affinity values.
+                                     Default: True.
     
     Returns:
         tuple: A tuple containing:
@@ -78,12 +83,13 @@ def load_model(model_path, device):
         num_layers=num_layers
     )
     
+    # Create model with the appropriate affinity setting
     model = ConditionalRNNGenerator(
         vocab_size=smiles_vocab_size,
         embed_dim=embed_dim,
         hidden_dim=hidden_dim*2, 
         target_encoding_dim=output_dim,
-        use_affinity=True
+        use_affinity=use_affinity
     )
     
     protein_encoder.load_state_dict(checkpoint['protein_encoder_state_dict'])
@@ -94,11 +100,13 @@ def load_model(model_path, device):
     model.eval()
     
     print(f"Model loaded successfully (from epoch {checkpoint.get('epoch', 'unknown')})")
+    print(f"Model {'uses' if use_affinity else 'does not use'} affinity values")
     
     return model, protein_encoder, vocab_data
 
 
-def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_molecules=10, output_folder="generated"):
+def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, 
+                        n_molecules=10, output_folder="generated", use_affinity=True):
     """
     Generate molecules for a specific target protein sequence.
     
@@ -111,10 +119,12 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
         target_sequence_or_file (str): Protein sequence as a string or path to a file
                                       containing the sequence.
         affinity (float, optional): Target binding affinity on a scale of 0-1. 
-                                  Default: 0.7.
+                                  Default: 0.7. Ignored if use_affinity=False.
         n_molecules (int, optional): Number of molecules to generate. Default: 10.
         output_folder (str, optional): Directory to save generated molecules.
                                       Default: "generated".
+        use_affinity (bool, optional): Whether the model was trained with affinity values.
+                                     Default: True.
     
     Returns:
         list: A list of SMILES strings representing the generated molecules.
@@ -127,7 +137,7 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
     from rdkit.Chem import QED
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    model, protein_encoder, vocab_data = load_model(model_path, device)
+    model, protein_encoder, vocab_data = load_model(model_path, device, use_affinity)
 
     if os.path.isfile(target_sequence_or_file):
         with open(target_sequence_or_file, 'r') as f:
@@ -136,7 +146,10 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
         target_sequence = target_sequence_or_file
     
     print(f"Target sequence length: {len(target_sequence)}")
-    print(f"Generating {n_molecules} molecules with affinity {affinity}...")
+    if use_affinity:
+        print(f"Generating {n_molecules} molecules with affinity {affinity}...")
+    else:
+        print(f"Generating {n_molecules} molecules (model does not use affinity values)...")
     
     filtered_molecules = []
     attempts = 0
@@ -148,13 +161,13 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
             protein_encoder,
             target_sequence,
             vocab_data,
-            affinity_value=affinity,
+            affinity_value=affinity if use_affinity else None,
             num_molecules=needed,  # Generate more to increase chance
             device=device,
             temperature=0.7,
             max_attempts=5
         )
-        # Filter for QED > 0.5 and uniqueness
+        # Filter for QED > 0.3 and uniqueness
         for smi in molecules:
             try:
                 mol = Chem.MolFromSmiles(smi)
@@ -167,17 +180,31 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7, n_mol
         attempts += 1
 
     if len(filtered_molecules) < n_molecules:
-        print(f"Warning: Only generated {len(filtered_molecules)} molecules with QED > 0.5 after {attempts} attempts.")
+        print(f"Warning: Only generated {len(filtered_molecules)} molecules with QED > 0.3 after {attempts} attempts.")
+
+    # Calculate average QED for the generated molecules
+    qed_values = []
+    for smi in filtered_molecules:
+        try:
+            mol = Chem.MolFromSmiles(smi)
+            if mol:
+                qed_values.append(QED.qed(mol))
+        except Exception:
+            continue
+    
+    avg_qed = sum(qed_values) / len(qed_values) if qed_values else 0
+    print(f"Average QED of generated molecules: {avg_qed:.4f}")
 
     os.makedirs(output_folder, exist_ok=True)
-    output_file = os.path.join(output_folder, "generated_molecules_qed05.csv")
+    output_file = os.path.join(output_folder, "generated_molecules.csv")
     pd.DataFrame({"SMILES": filtered_molecules}).to_csv(output_file, index=False)
-    print(f"Generated {len(filtered_molecules)} molecules with QED > 0.5, saved to {output_file}")
+    print(f"Generated {len(filtered_molecules)} molecules, saved to {output_file}")
 
     return filtered_molecules
 
 
-def evaluate_generation_quality(model, protein_encoder, vocab_data, test_proteins=None, n_molecules=100, device='cuda'):
+def evaluate_generation_quality(model, protein_encoder, vocab_data, test_proteins=None, 
+                               n_molecules=100, device='cuda', use_affinity=True):
     """
     Evaluate model performance metrics on molecule generation.
     
@@ -195,6 +222,8 @@ def evaluate_generation_quality(model, protein_encoder, vocab_data, test_protein
                                     Default: 100.
         device (str, optional): Device to run evaluation on ('cuda' or 'cpu').
                               Default: 'cuda'.
+        use_affinity (bool, optional): Whether the model was trained with affinity values.
+                                     Default: True.
     
     Returns:
         dict: A dictionary containing detailed evaluation metrics:
@@ -209,7 +238,8 @@ def evaluate_generation_quality(model, protein_encoder, vocab_data, test_protein
             - per_protein_results: List of dictionaries with per-protein metrics
     
     Notes:
-        - Multiple affinity values (0.3, 0.5, 0.7, 0.9) are used for each protein
+        - If the model uses affinity, multiple values (0.3, 0.5, 0.7, 0.9) are tested
+        - Otherwise, affinity is set to None for generation
         - Metrics include validity rate, uniqueness, and basic molecular properties
     """
     if test_proteins is None:
@@ -236,18 +266,33 @@ def evaluate_generation_quality(model, protein_encoder, vocab_data, test_protein
     for i, protein in enumerate(test_proteins):
         print(f"Evaluating protein {i+1}/{len(test_proteins)}: length {len(protein)}")
         
-        # Try with different affinities
-        affinities = [0.3, 0.5, 0.7, 0.9]
         protein_molecules = []
         
-        for affinity in affinities:
+        if use_affinity:
+            # Try with different affinities if the model was trained with affinity
+            affinities = [0.3, 0.5, 0.7, 0.9]
+            for affinity in affinities:
+                molecules = generate_molecules(
+                    model,
+                    protein_encoder,
+                    protein,
+                    vocab_data,
+                    affinity_value=affinity,
+                    num_molecules=n_molecules // len(affinities),  
+                    device=device,
+                    temperature=0.7,
+                    max_attempts=5
+                )
+                protein_molecules.extend(molecules)
+        else:
+            # Generate without affinity if the model was not trained with affinity
             molecules = generate_molecules(
                 model,
                 protein_encoder,
                 protein,
                 vocab_data,
-                affinity_value=affinity,
-                num_molecules=n_molecules // len(affinities),  
+                affinity_value=None,  # No affinity value
+                num_molecules=n_molecules,
                 device=device,
                 temperature=0.7,
                 max_attempts=5
@@ -299,6 +344,7 @@ def evaluate_generation_quality(model, protein_encoder, vocab_data, test_protein
     
     return results
 
+# Rest of the code remains the same
 def evaluate_druglikeness(molecules):
     """
     Evaluate the drug-like properties of generated molecules.
@@ -451,6 +497,7 @@ if __name__ == "__main__":
             --n_molecules: Number of molecules to generate
             --output_folder: Folder to save results
             --evaluate: Flag to run model evaluation instead of generation
+            --no_affinity: Flag to indicate the model was trained without affinity values
         """
 
     parser = argparse.ArgumentParser(description='Generate molecules using a trained conditional RNN')
@@ -468,13 +515,19 @@ if __name__ == "__main__":
     
     parser.add_argument('--evaluate', action='store_true',
                       help='Run evaluation instead of generation')
+    # Add new argument for models without affinity
+    parser.add_argument('--no_affinity', action='store_true',
+                      help='Load model that was trained without affinity values')
     
     args = parser.parse_args()
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    model, protein_encoder, vocab_data = load_model(args.model_path, device)
+    # Use the no_affinity flag to determine if the model uses affinity
+    use_affinity = not args.no_affinity
+    
+    model, protein_encoder, vocab_data = load_model(args.model_path, device, use_affinity)
     
     if args.evaluate:
         print("Evaluating model performance...")
@@ -483,7 +536,8 @@ if __name__ == "__main__":
             protein_encoder, 
             vocab_data, 
             n_molecules=100,
-            device=device
+            device=device,
+            use_affinity=use_affinity
         )
         
         print("\n=== Generation Quality Results ===")
@@ -507,10 +561,10 @@ if __name__ == "__main__":
                     protein_encoder,
                     test_protein,
                     vocab_data,
-                    affinity_value=0.7,
+                    affinity_value=0.7 if use_affinity else None,
                     num_molecules=100,
                     device=device,
-                    temperature=0.7,
+                    temperature=0.8,
                     max_attempts=5
                 )
                 all_mols.extend(additional_mols)
@@ -548,7 +602,8 @@ if __name__ == "__main__":
             args.target,
             args.affinity,
             args.n_molecules,
-            args.output_folder
+            args.output_folder,
+            use_affinity
         )
     else:
         print("Error: You must either specify --evaluate or provide a --target sequence")
