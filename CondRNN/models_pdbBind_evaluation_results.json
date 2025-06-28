@@ -1,0 +1,46 @@
+{
+  "generation_quality": {
+    "total_generated": 1,
+    "valid_molecules": 1,
+    "unique_molecules": 1,
+    "validity_rate": 1.0,
+    "uniqueness_rate": 1.0,
+    "avg_mol_weight": 415.49400000000014,
+    "avg_logp": -1.0464099999999943,
+    "failed_proteins": 2,
+    "per_protein_results": [
+      {
+        "protein_length": 245,
+        "generated": 1,
+        "valid": 1,
+        "unique": 1,
+        "validity_rate": 1.0,
+        "uniqueness_rate": 1.0,
+        "avg_mol_weight": 415.49400000000014,
+        "avg_logp": -1.0464099999999943
+      }
+    ]
+  },
+  "drug_likeness": {
+    "qed_scores": [
+      0.5100403297081614
+    ],
+    "lipinski_pass": 1,
+    "avg_qed": 0.5100403297081614,
+    "lipinski_pass_rate": 1.0,
+    "sa_scores": [],
+    "avg_sa": 0,
+    "mw_distribution": {
+      "<250": 0.0,
+      "250-350": 0.0,
+      "350-500": 100.0,
+      ">500": 0.0
+    },
+    "logp_distribution": {
+      "<1": 100.0,
+      "1-3": 0.0,
+      "3-5": 0.0,
+      ">5": 0.0
+    }
+  }
+}
