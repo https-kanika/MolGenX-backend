@@ -1,6 +1,7 @@
 # MolGenX Backend
 
 Backend service for the MolGenX drug discovery platform that handles molecule generation, optimization, and protein-ligand interaction analysis.
+MolGenX is a generative AI platform that accelerates drug discovery by generating protein-specific, drug-like molecules. It uses a custom conditional RNN model to tailor compounds to target proteins while optimizing properties like toxicity, solubility, and binding affinity. With interactive 3D visualization and guided explanations, MolGenX reduces trial-and-error, cuts costs, and democratizes early-stage drug design for teams without ML or HPC expertise.
 
 ## Prerequisites
 
@@ -32,26 +33,12 @@ pip install -r requirements.txt
 
  python main.py
 
- # This will start server at http://localhost:8080
+ # This will start server at http://localhost:3000
 
 ```
 
 ### API Endpoints
-
-- POST: /api/optimize
-    
-    Request Body: 
-    ```json
-    {
-        "protein": "SEQUENCE" or "pdb_id": "ID",
-        "weights": {
-            "druglikeness": 1.0,
-            "synthetic_accessibility": 0.8,
-            "lipinski_violations": 0.7,
-            "toxicity": 1.2,
-            "binding_affinity": 1.5,
-            "solubility": 0.6
-        }
-    }
+POST /api/optimize - Optimize drug candidates based on protein targets </br>
+GET /api/protein/{pdb_id} - Get protein visualization data for a given PDB ID </br>
     ```
-    
+### Refer to docs for more details
