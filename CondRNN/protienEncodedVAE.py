@@ -705,6 +705,10 @@ def generate_molecules(
             batch_protein_features = protein_features[:1].repeat(batch_size, 1)
             batch_affinity = affinity_tensor[:1].repeat(batch_size, 1) if affinity_tensor is not None else None
             
+            # Generate latent vector for molecule generation
+            # Add this line to create a random latent vector during generation
+            batch_latent_z = torch.randn(batch_size, 64, device=device)
+            
             # Track finished sequences
             finished = torch.zeros(batch_size, dtype=torch.bool, device=device)
             
@@ -714,7 +718,7 @@ def generate_molecules(
                     break
                     
                 # Forward pass
-                outputs = model(current_seqs, batch_protein_features, batch_affinity)
+                outputs = model(current_seqs, batch_protein_features, batch_affinity, latent_z=batch_latent_z)
                 
                 # Apply temperature to logits
                 next_token_logits = outputs[:, -1, :] / current_temp
@@ -765,7 +769,6 @@ def generate_molecules(
                 if mol and QED.qed(mol) > 0.3 :
                     valid_molecules.append(smiles)
                 
-        
         attempt += 1
     
     return list(set(valid_molecules))[:num_molecules]
