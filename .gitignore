@@ -188,3 +188,5 @@ top_compounds.csv
 protein_visualizations/
 CondRNN/bindingDB.csv
 data/
+CondRNN/protien_VAE_beta_01/
+EDA/high_qed_optimal_weight_compounds_max500.csv

@@ -5,7 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import QED
 import os
-from protienEncodedVAE import ProteinEncoder, ConditionalRNNGenerator, ProteinVAEEncoder, generate_molecules
+from cycle import ProteinEncoder, ConditionalRNNGenerator, ProteinVAEEncoder, generate_molecules
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
@@ -234,6 +234,7 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7,
             if mol:
                 qed = QED.qed(mol)
                 qed_values.append(qed)
+                print(qed)
         except Exception:
             continue
     
