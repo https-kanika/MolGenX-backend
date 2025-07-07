@@ -5,7 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import QED
 import os
-from protienEncodedVAE import ProteinEncoder, ConditionalRNNGenerator, ProteinVAEEncoder, generate_molecules
+from cycle import ProteinEncoder, ConditionalRNNGenerator, ProteinVAEEncoder, generate_molecules
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
@@ -45,7 +45,6 @@ def load_model(model_path, device, use_affinity=True, embed_dim=64, hidden_dim=2
         model_path = os.path.join(model_path, "best_model.pt")
         print(f"Model path is a directory, looking for model at: {model_path}")
     
-    # Check if file exists and get file size
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
     
@@ -67,7 +66,6 @@ def load_model(model_path, device, use_affinity=True, embed_dim=64, hidden_dim=2
         print("4. File not being a valid PyTorch checkpoint")
         raise
     
-    # Validate checkpoint structure
     required_keys = ['vocab_data', 'protein_encoder_state_dict', 'model_state_dict']
     missing_keys = [key for key in required_keys if key not in checkpoint]
     if missing_keys:
@@ -88,7 +86,6 @@ def load_model(model_path, device, use_affinity=True, embed_dim=64, hidden_dim=2
         num_layers=num_layers
     )
     
-    # Create VAE encoder
     vae_encoder = ProteinVAEEncoder(
         vocab_size=protein_vocab_size,
         embed_dim=embed_dim,
@@ -97,14 +94,13 @@ def load_model(model_path, device, use_affinity=True, embed_dim=64, hidden_dim=2
         num_layers=num_layers
     )
     
-    # Create model with the appropriate affinity and latent settings
     model = ConditionalRNNGenerator(
         vocab_size=smiles_vocab_size,
         embed_dim=embed_dim,
         hidden_dim=hidden_dim*2, 
         target_encoding_dim=output_dim,
         use_affinity=use_affinity,
-        latent_dim=latent_dim  # Add latent dimension parameter
+        latent_dim=latent_dim 
     )
     
     try:
@@ -116,7 +112,6 @@ def load_model(model_path, device, use_affinity=True, embed_dim=64, hidden_dim=2
         print("Please verify that the architecture parameters match those used during training.")
         raise
     
-    # Load VAE encoder state if available
     if 'vae_encoder_state_dict' in checkpoint:
         try:
             vae_encoder.load_state_dict(checkpoint['vae_encoder_state_dict'])
@@ -195,7 +190,6 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7,
         
         print(f"Attempt {attempt+1}/{max_generation_attempts}: Temperature={temperature:.2f}, Noise={latent_noise:.2f}")
         
-        # Generate molecules with these parameters (max_attempts=1 for each call)
         molecules = generate_molecules(
             model,
             protein_encoder,
@@ -205,12 +199,11 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7,
             affinity_value=affinity if use_affinity else None,
             num_molecules=n_molecules - len(valid_molecules),
             device=device,
-            temperature=min(1.2, temperature * 1.3),  # Higher temperature
-            max_attempts=3,  # More attempts with different parameters
-            latent_noise=min(1.0, latent_noise * 2.0)  # Much higher noise
+            temperature=min(1.2, temperature * 1.3),  
+            max_attempts=3, 
+            latent_noise=min(1.0, latent_noise * 2.0)  
         )
         
-        # Add valid molecules to our list
         for smi in molecules:
             try:
                 mol = Chem.MolFromSmiles(smi)
@@ -226,7 +219,6 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7,
         
         attempt += 1
     
-    # Calculate average QED for the generated molecules
     qed_values = []
     for smi in valid_molecules:
         try:
@@ -234,6 +226,7 @@ def generate_for_target(model_path, target_sequence_or_file, affinity=0.7,
             if mol:
                 qed = QED.qed(mol)
                 qed_values.append(qed)
+                print(qed)
         except Exception:
             continue
     
@@ -262,11 +255,9 @@ if __name__ == "__main__":
     parser.add_argument('--output_folder', type=str, default='generated',
                       help='Output folder for generated molecules')
     
-    # Add new argument for models without affinity
     parser.add_argument('--no_affinity', action='store_true',
                       help='Load model that was trained without affinity values')
     
-    # Add model architecture parameters
     parser.add_argument('--embed_dim', type=int, default=64,
                       help='Embedding dimension (default: 64)')
     parser.add_argument('--hidden_dim', type=int, default=256,
@@ -280,7 +271,6 @@ if __name__ == "__main__":
     parser.add_argument('--check_model', action='store_true',
                       help='Only check if model file is valid, do not generate molecules')
                       
-    # Add temperature and noise variation parameters - MOVED BEFORE parse_args()
     parser.add_argument('--base_temp', type=float, default=0.7,
                       help='Base temperature value (default: 0.7)')
     parser.add_argument('--temp_var', type=float, default=0.1,
@@ -297,7 +287,6 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    # Use the no_affinity flag to determine if the model uses affinity
     use_affinity = not args.no_affinity
 
     if args.check_model:
@@ -306,7 +295,6 @@ if __name__ == "__main__":
                        args.hidden_dim, args.output_dim, args.num_layers, args.latent_dim)
         print("Model loaded successfully!")
     else:
-        # Call generate_for_target with the correct parameter names
         generate_for_target(
             args.model_path,
             args.target,

@@ -45,7 +45,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
     This function will save preprocessed data and load it if available,
     significantly speeding up subsequent runs.
     """
-    # Create cache directory
     os.makedirs(cache_dir, exist_ok=True)
     
     # Create a hash of the preprocessing parameters to ensure cache validity
@@ -93,15 +92,13 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
     start_time = time.time()
     df = pd.read_csv(filepath)
     print(f"Data loaded in {time.time() - start_time:.2f}s - {len(df)} entries found")
-    
-    # Skip validation if requested
+
     if skip_validation:
         print(f"\n{'-'*50}")
         print(f"Skipping SMILES validation as requested")
-        # Assume all SMILES are valid
+
         valid_mols = list(range(len(df)))
     else:
-        # Create a visual separator for the validation stage
         print(f"\n{'-'*50}")
         print(f"Validating SMILES strings")
         
@@ -124,18 +121,15 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
             valid_mols = []
             updated_smiles = {}
             
-            # Progress tracking
             total_mols = len(df)
             processed = 0
             valid_count = 0
             
-            # Use thread pool for RDKit operations
             print(f"Using parallel processing with {os.cpu_count()} threads")
             with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
                 process_func = partial(process_smiles, smiles_series=df['smiles'])
                 futures = [executor.submit(process_func, i) for i in range(len(df))]
                 
-                # Show progress bar for validation
                 for future in tqdm(as_completed(futures), 
                                 total=len(futures), 
                                 desc="Validating SMILES"):
@@ -146,11 +140,9 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
                         valid_mols.append(idx)
                         updated_smiles[idx] = canonical_smiles
                         
-                    # Print progress update every 10% increment
                     if processed % (total_mols // 10) == 0:
                         print(f"  ↳ Progress: {processed}/{total_mols} molecules processed, {valid_count} valid ({valid_count/processed*100:.1f}%)")
         else:
-            # Original sequential processing for smaller datasets
             valid_mols = []
             print(f"Processing {len(df)} SMILES strings sequentially")
             for i, smiles in tqdm(enumerate(df['smiles']), total=len(df), desc="Validating SMILES"):
@@ -163,17 +155,14 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
                 except:
                     pass
         
-        # Update with canonical versions in larger datasets
         if len(df) > 10000:
             print("Updating with canonical SMILES representations...")
             for idx, smiles in tqdm(updated_smiles.items(), desc="Updating SMILES"):
                 df.loc[idx, 'smiles'] = smiles
         
-        # Filter to valid molecules
         df = df.iloc[valid_mols].reset_index(drop=True)
         print(f"SMILES validation complete: {len(df)} valid entries ({len(df)/len(valid_mols)*100:.1f}% of input)")
         
-    # Visual separator for length filtering
     print(f"\n{'-'*50}")
     print(f"Filtering by sequence length")
     print(f"  ↳ Max SMILES length: {max_smiles_length}")
@@ -189,32 +178,27 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
             import cupy as cp
             
             print("RAPIDS libraries found! Using GPU acceleration")
-            # Move dataframe to GPU
             start_time = time.time()
             gpu_df = cudf.DataFrame.from_pandas(df)
             print(f"  ↳ DataFrame moved to GPU in {time.time() - start_time:.2f}s")
             
-            # Filter by length using GPU operations
             print("Filtering sequences by length...")
             smiles_lengths = gpu_df['smiles'].str.len()
             protein_lengths = gpu_df['target_seq'].str.len()
             mask = (smiles_lengths <= max_smiles_length) & (protein_lengths <= max_protein_length)
             gpu_df = gpu_df[mask]
             
-            # Process affinity values if present
             if 'affinity' in gpu_df.columns:
                 print("Processing affinity values...")
                 gpu_df = gpu_df[gpu_df['affinity'] > 0]
                 gpu_df['affinity'] = cp.log10(gpu_df['affinity'].values)
                 
-                # Min-max normalize
                 min_aff = float(gpu_df['affinity'].min())
                 max_aff = float(gpu_df['affinity'].max())
                 gpu_df['affinity_normalized'] = (gpu_df['affinity'] - min_aff) / (max_aff - min_aff)
                 norm_params = {'min_aff': min_aff, 'max_aff': max_aff}
                 print(f"  ↳ Affinity range: {min_aff:.2f} to {max_aff:.2f} (log10)")
             
-            # Convert back to pandas for compatibility with rest of pipeline
             start_time = time.time()
             df = gpu_df.to_pandas()
             print(f"  ↳ DataFrame moved back to CPU in {time.time() - start_time:.2f}s")
@@ -222,8 +206,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
         except (ImportError, ModuleNotFoundError) as e:
             print(f"RAPIDS libraries not found: {e}")
             print("Falling back to CPU processing for dataframes")
-            
-            # Fallback to CPU processing with visual feedback
             print("Filtering by length on CPU...")
             before_len = len(df)
             df = df[df['smiles'].str.len() <= max_smiles_length]
@@ -234,20 +216,17 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
             after_protein = len(df)
             print(f"  ↳ Protein length filter: {after_smiles - after_protein} entries removed")
             
-            # Process affinity values if present
             if 'affinity' in df.columns:
                 print("Processing affinity values...")
                 df = df[df['affinity'] > 0]
                 df['affinity'] = np.log10(df['affinity'])
                 
-                # Min-max normalize
                 min_aff = df['affinity'].min()
                 max_aff = df['affinity'].max()
                 df['affinity_normalized'] = (df['affinity'] - min_aff) / (max_aff - min_aff)
                 norm_params = {'min_aff': min_aff, 'max_aff': max_aff}
                 print(f"  ↳ Affinity range: {min_aff:.2f} to {max_aff:.2f} (log10)")
     else:
-        # Standard CPU processing with visual feedback
         print("🖥️ Using CPU for dataframe operations (GPU acceleration disabled)")
         
         print("📊 Filtering by length...")
@@ -260,7 +239,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
         after_protein = len(df)
         print(f"  ↳ Protein length filter: {after_smiles - after_protein} entries removed")
         
-        # Process affinity values if present
         if 'affinity' in df.columns:
             print("Processing affinity values...")
             before_aff = len(df)
@@ -268,8 +246,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
             print(f"  ↳ Removed {before_aff - len(df)} entries with non-positive affinity")
             
             df['affinity'] = np.log10(df['affinity'])
-            
-            # Min-max normalize
             min_aff = df['affinity'].min()
             max_aff = df['affinity'].max()
             df['affinity_normalized'] = (df['affinity'] - min_aff) / (max_aff - min_aff)
@@ -278,11 +254,8 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
     
     print(f"Length filtering complete: {len(df)} entries remain")
     
-    # Visual separator for vocabulary building
     print(f"\n{'-'*50}")
     print("Building vocabulary")
-    
-    # Build vocabularies
     start_time = time.time()
     smiles_chars = set()
     protein_chars = set()
@@ -292,7 +265,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
     num_chunks = (len(df) + chunk_size - 1) // chunk_size
     for i in tqdm(range(0, len(df), chunk_size), total=num_chunks, desc="Building vocabulary"):
         chunk = df.iloc[i:i+chunk_size]
-        # Update char sets from this chunk
         for smiles in chunk['smiles']:
             smiles_chars.update(set(smiles))
         for seq in chunk['target_seq']:
@@ -310,7 +282,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
     print(f"  ↳ SMILES vocabulary size: {len(smiles_vocab)}")
     print(f"  ↳ Protein vocabulary size: {len(protein_vocab)}")
     
-    # Visual separator for dataset splitting
     print(f"\n{'-'*50}")
     print("Splitting dataset into train/validation/test")
     
@@ -323,13 +294,12 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
                 df['affinity_normalized'], 
                 10, 
                 labels=False, 
-                duplicates='drop'  # Handle duplicate bin edges
+                duplicates='drop' 
             )
             
             # In case we have NaN values due to very few unique values
             if df['affinity_bin'].isna().any():
                 print("Duplicate bin edges detected, reducing to 3 bins")
-                # Simple fallback: just use 3 bins instead of 10
                 df['affinity_bin'] = pd.qcut(
                     df['affinity_normalized'], 
                     3,  # Fewer bins
@@ -357,7 +327,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
             train_df, test_df = train_test_split(df, test_size=0.1, random_state=42)
             train_df, val_df = train_test_split(train_df, test_size=0.1, random_state=42)
             
-        # Remove temporary column
         train_df = train_df.drop('affinity_bin', axis=1)
         val_df = val_df.drop('affinity_bin', axis=1)
         test_df = test_df.drop('affinity_bin', axis=1)
@@ -383,7 +352,6 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
     if 'affinity' in df.columns and norm_params is not None:
         vocab_data['norm_params'] = norm_params
     
-    # Save preprocessed data to cache
     print(f"\n{'-'*50}")
     print("Saving preprocessed data to cache...")
     try:
@@ -399,14 +367,13 @@ def preprocess_bindingdb(filepath, max_smiles_length=100, max_protein_length=500
             pickle.dump(cache_data, f, protocol=pickle.HIGHEST_PROTOCOL)
         
         file_size = os.path.getsize(cache_file) / (1024 * 1024)  # Size in MB
-        print(f"✅ Preprocessed data saved to: {cache_file}")
-        print(f"  ↳ Cache file size: {file_size:.1f} MB")
-        print(f"  ↳ Next run will load this cache automatically")
+        print(f"Preprocessed data saved to: {cache_file}")
+        print(f"Cache file size: {file_size:.1f} MB")
+        print(f"Next run will load this cache automatically")
     except Exception as e:
-        print(f"⚠️  Warning: Could not save cache: {e}")
-        print("  ↳ Preprocessing will be required on next run")
+        print(f"Warning: Could not save cache: {e}")
+        print("Preprocessing will be required on next run")
     
-    # Final summary
     print(f"\n{'='*50}")
     print(f"PREPROCESSING COMPLETE")
     print(f"{'='*50}")
@@ -423,7 +390,7 @@ class BindingDBDataset(Dataset):
         self.max_smiles_len = max_smiles_len
         self.max_protein_len = max_protein_len
         self.include_affinity = include_affinity
-        self.name = name  # Add name for logging
+        self.name = name  
         
         # Pre-process all data at initialization (can use GPU)
         self.processed_data = []
@@ -459,8 +426,6 @@ class BindingDBDataset(Dataset):
             batch_data = []
             for idx in range(start_idx, end_idx):
                 row = self.df.iloc[idx]
-                
-                # Process SMILES
                 smiles = row['smiles']
                 smiles_indices = [self.smiles_char_to_idx['<START>']] + [self.smiles_char_to_idx[c] for c in smiles]
                 
@@ -469,7 +434,6 @@ class BindingDBDataset(Dataset):
                 else:
                     smiles_indices = smiles_indices[:self.max_smiles_len]
                 
-                # Process protein
                 protein = row['target_seq']
                 protein_indices = [self.protein_char_to_idx[c] if c in self.protein_char_to_idx else 
                                 self.protein_char_to_idx['<PAD>'] for c in protein]
@@ -479,13 +443,11 @@ class BindingDBDataset(Dataset):
                 else:
                     protein_indices = protein_indices[:self.max_protein_len]
                 
-                # Create tensors ON THE CORRECT DEVICE
                 smiles_tensor = torch.tensor(smiles_indices, dtype=torch.long, device=self.device)
                 input_tensor = smiles_tensor[:-1]  
                 target_tensor = smiles_tensor[1:]
                 protein_tensor = torch.tensor(protein_indices, dtype=torch.long, device=self.device)
                 
-                # Add affinity if needed
                 if self.include_affinity and 'affinity_normalized' in self.df.columns:
                     affinity = torch.tensor([row['affinity_normalized']], dtype=torch.float, device=self.device)
                     batch_data.append((input_tensor, target_tensor, protein_tensor, affinity))
@@ -494,13 +456,11 @@ class BindingDBDataset(Dataset):
 
             self.processed_data.extend(batch_data)
             
-            # Provide update on tensor placement
             if batch_idx == 0 and self.processed_data:
                 item = self.processed_data[0]
                 tensors_location = "GPU" if item[0].device.type == 'cuda' else "CPU"
-                print(f"  ↳ Tensors stored on: {tensors_location}")
+                print(f"Tensors stored on: {tensors_location}")
 
-        # REMOVE the duplicate lines completely - they are causing data corruption
         
     def __len__(self):
         return len(self.processed_data)
@@ -522,7 +482,6 @@ def create_dataloaders(train_df, val_df, test_df, vocab_data,
     
     start_time = time.time()
     
-    # Create each dataset with name label for visual tracking
     train_dataset = BindingDBDataset(
         train_df, 
         vocab_data['smiles_char_to_idx'],
@@ -556,7 +515,6 @@ def create_dataloaders(train_df, val_df, test_df, vocab_data,
         name="Test"
     )
     
-    # Use fewer workers when preprocessing on GPU since data is already batched
     pin_memory = device.type == 'cpu'  # Only pin memory if using CPU for preprocessing
     
     print(f"\n Creating DataLoaders with batch_size={batch_size}")
@@ -565,7 +523,6 @@ def create_dataloaders(train_df, val_df, test_df, vocab_data,
     else:
         print(f"  ↳ Using {num_workers} workers for CPU preprocessing")
     
-    # Create DataLoaders with optimized settings
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -590,7 +547,6 @@ def create_dataloaders(train_df, val_df, test_df, vocab_data,
         pin_memory=pin_memory
     )
     
-    # Summary
     total_time = time.time() - start_time
     print(f"All datasets and dataloaders created in {total_time:.2f}s")
     print(f"  ↳ Training:   {len(train_dataset)} samples, {len(train_loader)} batches")
@@ -698,12 +654,10 @@ class ConditionalRNNGenerator(nn.Module):
         if use_affinity:
             target_input_dim += 1  # Add dimension for affinity value
         
-        # Add latent dimension
         self.use_latent = latent_dim > 0
         if self.use_latent:
             target_input_dim += latent_dim
         
-        # Now create the target encoder with correct input dimension
         self.target_encoder = nn.Sequential(
             nn.Linear(target_input_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
@@ -735,36 +689,25 @@ class ConditionalRNNGenerator(nn.Module):
         
         x_embed = self.dropout(self.embedding(x))  # [batch_size, seq_len, embed_dim]
 
-        # Process target features
         if self.use_affinity and affinity is not None:
             combined_target = torch.cat([target_features, affinity], dim=1)
         else:
             combined_target = target_features
         
-        # Add latent vector if provided
         if self.use_latent and latent_z is not None:
-            # Ensure latent_z has the correct batch size
             if latent_z.size(0) != combined_target.size(0):
                 latent_z = latent_z[0:1].expand(combined_target.size(0), -1)
             
             combined_target = torch.cat([combined_target, latent_z], dim=1)
         
-        # Process through target encoder
         target_encoded = self.target_encoder(combined_target)  # [batch_size, hidden_dim]
-        
-        # Expand target features to match sequence length
         target_expanded = target_encoded.unsqueeze(1).expand(-1, seq_len, -1)
         
-        #print(f"x_embed shape: {x_embed.shape}")
-        #print(f"target_expanded shape: {target_expanded.shape}")
-        
-        # Check if batch sizes match, fix if they don't
         if x_embed.size(0) != target_expanded.size(0):
             # Resize target_expanded to match x_embed's batch size
             target_expanded = target_expanded[:x_embed.size(0)]
             print(f"Adjusted target_expanded shape: {target_expanded.shape}")
         
-        # Fix dimension mismatch by resizing feature dimensions if needed
         expected_hidden_dim = self.lstm.input_size - x_embed.size(2)
         if target_expanded.size(2) != expected_hidden_dim:
             # Use adaptive pooling to resize the feature dimension
@@ -773,9 +716,7 @@ class ConditionalRNNGenerator(nn.Module):
             ).transpose(1, 2)
             print(f"Resized target_expanded shape: {target_expanded.shape}")
         
-        # Concatenate molecule embedding with target features
         combined_input = torch.cat([x_embed, target_expanded], dim=2)
-        
         lstm_output, _ = self.lstm(combined_input)
         output = self.output_network(lstm_output)
         return output
@@ -801,8 +742,6 @@ def train_model(
     
     model = model.to(device)
     protein_encoder = protein_encoder.to(device)
-    
-    # Create VAE encoder with correct parameters
     vae_encoder = ProteinVAEEncoder(
         vocab_size=protein_encoder.embedding.num_embeddings,
         embed_dim=protein_encoder.embedding.embedding_dim,
@@ -831,13 +770,11 @@ def train_model(
     scaler = torch.amp.GradScaler('cuda') if use_amp else None
     
     for epoch in range(epochs):
-        # Training phase
         model.train()
         protein_encoder.train()
         vae_encoder.train()
         train_loss = 0
         
-        # Calculate beta once per epoch
         cycle_length = epochs
         cycle_pos = epoch % cycle_length
         if cycle_pos < cycle_length * 0.3:
@@ -851,7 +788,6 @@ def train_model(
         optimizer.zero_grad(set_to_none=True)
         
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} [Train]")):
-            # Unpack batch
             if include_affinity:
                 inputs, targets, protein_sequences, affinities = batch
                 inputs = inputs.to(device, non_blocking=True)
@@ -865,7 +801,6 @@ def train_model(
                 protein_sequences = protein_sequences.to(device, non_blocking=True)
                 affinities = None
             
-            # Forward pass with autocast
             with torch.amp.autocast('cuda') if use_amp else nullcontext():
                 z, mu, logvar = vae_encoder(protein_sequences)
                 protein_features = protein_encoder(protein_sequences)
@@ -903,8 +838,7 @@ def train_model(
             train_loss += loss.item() * gradient_accumulation_steps
         
         train_loss /= len(train_loader)
-        
-        # Validation phase
+
         model.eval()
         protein_encoder.eval()
         vae_encoder.eval()
@@ -978,10 +912,10 @@ def generate_molecules(
     vocab_data,
     affinity_value=0.7,
     num_molecules=10,
-    temperature=1.0,  # Increased from 0.8
+    temperature=1.0,  
     device='cuda',
-    max_attempts=50,  # Increased from 30
-    latent_noise=0.3  # Increased from 0.2
+    max_attempts=50,  
+    latent_noise=0.3  
 ):
     """
     Generate molecules for a specified protein target sequence with enhanced diversity.
@@ -1009,7 +943,6 @@ def generate_molecules(
     protein_encoder.eval()
     vae_encoder.eval()
     
-    # Pad protein sequence
     max_protein_len = 500  
     print(f"Processing target protein sequence ({len(target_sequence)} amino acids)")
     protein_indices = [vocab_data['protein_char_to_idx'][c] if c in vocab_data['protein_char_to_idx'] else 
@@ -1024,12 +957,11 @@ def generate_molecules(
     
     print("Encoding protein and generating latent representation")
     with torch.no_grad():
-        # Get protein encoding and latent representation for a single protein
         protein_features_single = protein_encoder(protein_tensor)
         z_mean_single, mu, logvar = vae_encoder(protein_tensor)
         
-        print(f"  ↳ Protein encoding dimension: {protein_features_single.shape}")
-        print(f"  ↳ Latent vector dimension: {z_mean_single.shape}")
+        print(f"Protein encoding dimension: {protein_features_single.shape}")
+        print(f"Latent vector dimension: {z_mean_single.shape}")
     
     if model.use_affinity:
         print(f"Using binding affinity: {affinity_value}")
@@ -1037,7 +969,7 @@ def generate_molecules(
         print("Not using binding affinity")
     
     valid_molecules = []
-    all_valid_mols = set()  # Keep track of all valid molecules across attempts
+    all_valid_mols = set() 
     attempt = 0
     
     start_token_idx = vocab_data['smiles_char_to_idx']['<START>']
@@ -1048,51 +980,46 @@ def generate_molecules(
         current_temp = temperature * (1.0 + 0.02 * (attempt // 5))  # Slower increase
         current_noise = min(1.0, latent_noise * (1.0 + 0.05 * (attempt // 8)))  # Gentler noise increase
         
-        print(f"\n🔄 Attempt {attempt+1}/{max_attempts}")
-        print(f"  ↳ Temperature: {current_temp:.2f}")
-        print(f"  ↳ Latent noise: {current_noise:.2f}")
-        print(f"  ↳ Valid molecules so far: {len(valid_molecules)}")
+        print(f"\n Attempt {attempt+1}/{max_attempts}")
+        print(f"Temperature: {current_temp:.2f}")
+        print(f"Latent noise: {current_noise:.2f}")
+        print(f"Valid molecules so far: {len(valid_molecules)}")
         
         with torch.no_grad():
-            # Larger batch size for more candidates
-            batch_size = min(num_molecules * 8, 256)  # Increased from 4 to 8
+            batch_size = min(num_molecules * 8, 256)  
             current_seqs = torch.tensor([[start_token_idx]] * batch_size, device=device)
             batch_protein_features = protein_features_single.repeat(batch_size, 1)
             
-            # Prepare affinity values if needed
             if model.use_affinity:
                 batch_affinity = torch.tensor([[affinity_value]] * batch_size, 
                                              dtype=torch.float).to(device)
             else:
                 batch_affinity = None
             
-            # More diverse latent sampling strategies
             if attempt % 4 == 0:
-                print("  ↳ Using learned latent vectors")
+                print("Using learned latent vectors")
                 batch_latent_z = z_mean_single.repeat(batch_size, 1)
                 noise = torch.randn_like(batch_latent_z) * current_noise
                 batch_latent_z = batch_latent_z + noise
             elif attempt % 4 == 1:
-                print("  ↳ Using random latent vectors")
+                print("Using random latent vectors")
                 batch_latent_z = torch.randn(batch_size, z_mean_single.size(1), device=device) * 2.0
             elif attempt % 4 == 2:
-                print("  ↳ Using interpolated latent vectors")
+                print("Using interpolated latent vectors")
                 random_z = torch.randn(batch_size, z_mean_single.size(1), device=device) * 1.5
                 learned_z = z_mean_single.repeat(batch_size, 1)
                 alpha = torch.rand(batch_size, 1, device=device)
                 batch_latent_z = alpha * learned_z + (1 - alpha) * random_z
             else:
-                print("  ↳ Using perturbed latent vectors")
+                print("Using perturbed latent vectors")
                 base_latent = z_mean_single.repeat(batch_size, 1)
                 # Add structured noise instead of pure random
                 structured_noise = torch.randn_like(base_latent) * current_noise
                 batch_latent_z = base_latent + structured_noise
                 
-            # Track finished sequences
             finished = torch.zeros(batch_size, dtype=torch.bool, device=device)
             
-            for step in range(150):  # Increased maximum length from 125
-                # Only process unfinished sequences
+            for step in range(150):  
                 if finished.all():
                     break
                     
@@ -1102,11 +1029,9 @@ def generate_molecules(
                 # Apply temperature to logits
                 next_token_logits = outputs[:, -1, :] / current_temp
                 
-                # IMPROVED: More balanced anti-repeat penalties
                 if step > 15:  # Start later to allow natural repetition
                     for b in range(batch_size):
                         if not finished[b]:
-                            # Look at last 8 tokens instead of 10
                             prev_tokens = current_seqs[b, -8:]
                             token_counts = {}
                             for t in prev_tokens:
@@ -1114,7 +1039,6 @@ def generate_molecules(
                                 token_counts[token_id] = token_counts.get(token_id, 0) + 1
                                     
                             for token_id, count in token_counts.items():
-                                # Only penalize if seen more than 3 times (instead of 2)
                                 if count > 3:
                                     penalty = 1.0 + 0.3 * count  # Reduced penalty strength
                                     next_token_logits[b, token_id] /= penalty
@@ -1122,16 +1046,15 @@ def generate_molecules(
                 # Apply softmax
                 probs = F.softmax(next_token_logits, dim=1)
 
-                # IMPROVED: More balanced drug-likeness biasing
+                #More balanced drug-likeness biasing
                 drug_like_chars = {
                     # Moderate boosts instead of extreme ones
-                    'c': 3.0, 'n': 2.8, 'o': 2.5, 's': 2.2,  # Reduced from 8.0, 7.0, etc.
+                    'c': 3.0, 'n': 2.8, 'o': 2.5, 's': 2.2,
                     'N': 2.5, 'O': 2.5, 'S': 2.0,
                     '1': 2.5, '2': 2.5, '3': 2.0, '4': 1.8, '5': 1.8, '6': 2.2,
                     '(': 2.0, ')': 2.0, '=': 1.8, '-': 1.5,
                     'F': 2.0, 'Cl': 1.8, 'Br': 1.5, 'C': 1.5,
-                    # Less aggressive suppression
-                    '#': 0.5, 'I': 0.7, 'P': 0.8,  # Increased from 0.2, 0.4, 0.6
+                    '#': 0.5, 'I': 0.7, 'P': 0.8, 
                 }
 
                 # Apply biasing with step-dependent strength
@@ -1149,7 +1072,7 @@ def generate_molecules(
                 # Renormalize
                 probs = probs / probs.sum(dim=-1, keepdim=True)
 
-                # IMPROVED: More flexible position-based sampling
+                #More flexible position-based sampling
                 if step < 3:
                     # Early: Encourage aromatic starts but allow flexibility
                     aromatic_priority = ['c', 'n', 'o', 's', 'C', 'N', 'O']
@@ -1160,26 +1083,25 @@ def generate_molecules(
                     if aromatic_indices:
                         # Boost aromatic starts but don't completely suppress others
                         for idx in aromatic_indices:
-                            probs[:, idx] *= 5.0  # Reduced from 15.0
+                            probs[:, idx] *= 5.0  
                         probs = probs / probs.sum(dim=-1, keepdim=True)
                     
-                    # Use top-5 sampling instead of forcing specific tokens
                     k = min(5, probs.size(-1))
                     top_k_probs, top_k_indices = torch.topk(probs, k)
                     top_k_probs = top_k_probs / top_k_probs.sum(dim=-1, keepdim=True)
                     sampled_indices = torch.multinomial(top_k_probs, 1)
                     next_tokens = top_k_indices.gather(-1, sampled_indices)
                     
-                elif step < 15:  # Increased from 8
-                    # Mid-early: Top-5 sampling for diversity
+                elif step < 15:  
+                    #Top-5 sampling for diversity
                     k = min(5, probs.size(-1))
                     top_k_probs, top_k_indices = torch.topk(probs, k)
                     top_k_probs = top_k_probs / top_k_probs.sum(dim=-1, keepdim=True)
                     sampled_indices = torch.multinomial(top_k_probs, 1)
                     next_tokens = top_k_indices.gather(-1, sampled_indices)
                     
-                elif step < 30:  # New middle stage
-                    # Mid: Top-4 sampling
+                elif step < 30:  
+                    #Top-4 sampling
                     k = min(4, probs.size(-1))
                     top_k_probs, top_k_indices = torch.topk(probs, k)
                     top_k_probs = top_k_probs / top_k_probs.sum(dim=-1, keepdim=True)
@@ -1187,17 +1109,15 @@ def generate_molecules(
                     next_tokens = top_k_indices.gather(-1, sampled_indices)
                     
                 else:
-                    # Late: Top-3 sampling (still more flexible than top-2)
+                    #Top-3 sampling
                     k = min(3, probs.size(-1))
                     top_k_probs, top_k_indices = torch.topk(probs, k)
                     top_k_probs = top_k_probs / top_k_probs.sum(dim=-1, keepdim=True)
                     sampled_indices = torch.multinomial(top_k_probs, 1)
                     next_tokens = top_k_indices.gather(-1, sampled_indices)
 
-                # CRITICAL: Update sequences
                 current_seqs = torch.cat([current_seqs, next_tokens], dim=1)
                 
-                # IMPROVED: More lenient termination conditions
                 for b in range(batch_size):
                     if not finished[b]:
                         last_token = current_seqs[b, -1].item()
@@ -1208,25 +1128,22 @@ def generate_molecules(
                         # 2. Reached absolute maximum length
                         # 3. Generated a reasonable molecule AND taken enough steps
                         if (last_token == pad_token_idx or 
-                            seq_length >= 120 or  # Increased from 100
-                            (seq_length >= 25 and step > 40)):  # More lenient: 25 chars, 40 steps
+                            seq_length >= 120 or  
+                            (seq_length >= 25 and step > 40)):  
                             finished[b] = True
-        
-        # Process generated sequences
+
         generated_smiles = []
         for seq in current_seqs:
             smiles = ''.join([vocab_data['smiles_idx_to_char'][idx.item()] 
                            for idx in seq if idx.item() not in [pad_token_idx, start_token_idx]])
             generated_smiles.append(smiles)
         
-        # IMPROVED: More lenient initial validation
+
         new_valid_count = 0
         for smiles in generated_smiles:
-            # Skip empty strings and already found molecules
-            if not smiles or smiles in all_valid_mols or len(smiles) < 3:  # Reduced from 5 to 3
+            if not smiles or smiles in all_valid_mols or len(smiles) < 3: 
                 continue
                 
-            # Try to validate the molecule
             try:
                 mol = Chem.MolFromSmiles(smiles)
                 if mol is not None:
@@ -1238,13 +1155,12 @@ def generate_molecules(
                             all_valid_mols.add(canonical_smiles)
                             valid_molecules.append(canonical_smiles)
                             new_valid_count += 1
-                            print(f"✅ Valid molecule found: {canonical_smiles}")
+                            print(f"Valid molecule found: {canonical_smiles}")
             except Exception as e:
                 continue
         
-        print(f"📊 Attempt results: {new_valid_count} new valid molecules")
+        print(f"Attempt results: {new_valid_count} new valid molecules")
         
-        # IMPROVED: Early stopping with quality threshold
         if len(valid_molecules) >= num_molecules:
             print(f"🎯 Target reached! Found {len(valid_molecules)} valid molecules")
             break
@@ -1260,17 +1176,16 @@ def generate_molecules(
         
         # If no molecules were found in this attempt, show examples
         if new_valid_count == 0 and attempt % 3 == 0:
-            print("❌ No valid molecules found in this attempt")
+            print("No valid molecules found in this attempt")
             print("Examples of generated strings:")
             for i, smiles in enumerate(generated_smiles[:3]):
                 print(f"  {i+1}. {smiles}")
         
         attempt += 1
     
-    # Final filtering and selection
     final_molecules = []
     if len(valid_molecules) > 0:
-        print(f"\n✨ Generated {len(valid_molecules)} valid molecules")
+        print(f"\n Generated {len(valid_molecules)} valid molecules")
         
         # Sort by drug-likeness if we have enough molecules
         if len(valid_molecules) > num_molecules:
@@ -1285,7 +1200,7 @@ def generate_molecules(
                 
                 # Sort by QED score (higher is better)
                 scored_mols.sort(key=lambda x: x[1], reverse=True)
-                print("🔍 Molecules ranked by drug-likeness (QED):")
+                print("Molecules ranked by drug-likeness (QED):")
                 for i, (smiles, qed) in enumerate(scored_mols[:num_molecules]):
                     print(f"  {i+1}. {smiles} (QED: {qed:.3f})")
                 
@@ -1297,14 +1212,14 @@ def generate_molecules(
             final_molecules = valid_molecules
             
         # Add diversity check
-        print(f"📈 Final selection: {len(final_molecules)} molecules")
+        print(f"Final selection: {len(final_molecules)} molecules")
         if len(set(final_molecules)) < len(final_molecules):
-            print("⚠️  Warning: Some duplicate molecules detected")
+            print("Warning: Some duplicate molecules detected")
             final_molecules = list(set(final_molecules))  # Remove duplicates
-            print(f"📈 After deduplication: {len(final_molecules)} unique molecules")
+            print(f"After deduplication: {len(final_molecules)} unique molecules")
     else:
-        print("❌ Failed to generate any valid molecules")
-        print("💡 Try increasing temperature, max_attempts, or reducing constraints")
+        print("Failed to generate any valid molecules")
+        print("Try increasing temperature, max_attempts, or reducing constraints")
     
     print("="*50)
     return final_molecules
@@ -1434,7 +1349,6 @@ def main(args):
         save_all_epochs=args.save_all_epochs
     )
 
-    # Load the best model, which includes the VAE
     checkpoint = torch.load(os.path.join(args.save_dir, 'best_model.pt'), map_location=device, weights_only=False)
     vae_encoder = ProteinVAEEncoder(
         vocab_size=len(vocab_data['protein_char_to_idx']),
@@ -1476,7 +1390,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_protein_len', type=int, default=500, 
                         help='Maximum protein sequence length')
     
-    # NEW: Cache parameters
+    #Cache parameters
     parser.add_argument('--cache_dir', type=str, default='./preprocessed_cache',
                         help='Directory to store/load preprocessed data cache')
     parser.add_argument('--force_reprocess', action='store_true',
@@ -1508,7 +1422,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_amp', action='store_true', 
                         help='Use automatic mixed precision')
     
-    # NEW: Add argument for optional binding affinity
+    #Add argument for optional binding affinity
     parser.add_argument('--use_affinity', action='store_true', 
                         help='Use binding affinity values during training and generation')
     
