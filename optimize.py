@@ -29,6 +29,15 @@ class NumpyEncoder(json.JSONEncoder):
             return Chem.MolToSmiles(obj)
         return super(NumpyEncoder, self).default(obj)
 
+_model_cache = {}
+
+def _get_cached_model(model_name: str, load_func):
+    """Cache expensive model loading operations"""
+    if model_name not in _model_cache:
+        print(f"Loading {model_name} for the first time...")
+        _model_cache[model_name] = load_func()
+    return _model_cache[model_name]
+
 class DrugOptimizer:
     #TODO WRITE DOC STRINGS TO GENERATE README
     """
@@ -62,37 +71,27 @@ class DrugOptimizer:
     def predict_protein_structure(self):
         """
         Predicts the structure information for the target protein using the ESM-2 model.
-        This method loads the ESM-2 transformer model and its tokenizer from Hugging Face,
-        processes the target protein sequence (up to 1000 amino acids to avoid memory issues),
-        and generates protein embeddings by mean pooling the last hidden state (excluding special tokens).
-        Returns the resulting sequence embeddings as a tensor, or None if the target protein is not set
-        or an error occurs during prediction.
-        Returns:
-            torch.Tensor or None: The mean-pooled protein sequence embeddings, or None if prediction fails.
         """
         if not self.target_protein:
             return None
     
         try:
-            #print("Loading ESM-2 model...")
-            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
-            model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+            def load_esm_model():
+                tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
+                model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+                return tokenizer, model
+            
+            tokenizer, model = _get_cached_model("esm2", load_esm_model)
+            
             # Process only the first 1000 amino acids to avoid memory issues
             protein_seq = self.target_protein[:1000]
-            #print(f"Processing protein sequence (length: {len(protein_seq)})")
         
             inputs = tokenizer(protein_seq, return_tensors="pt")
         
             with torch.no_grad():
                 outputs = model(**inputs, output_hidden_states=True)
-            
-                # Get last hidden state
                 embeddings = outputs.hidden_states[-1]
-            
-                # Mean pool over sequence length (excluding special tokens)
                 sequence_embeddings = embeddings[:, 1:-1].mean(dim=1)
-            
-                #print(f"Generated protein embeddings with shape: {sequence_embeddings.shape}")
             
             return sequence_embeddings
     
@@ -164,34 +163,22 @@ class DrugOptimizer:
     
     def predict_toxicity(self, mol) -> float:
         """
-        Predicts the toxicity of a molecule using IBM's MoLFormer-XL model, with fallbacks to structural alerts and other heuristics.
-        Parameters:
-            mol (rdkit.Chem.Mol): The molecule object to analyze.
-        Returns:
-            float: A normalized toxicity score between 0.0 (non-toxic) and 1.0 (highly toxic).
-        Method:
-            - Converts the molecule to a SMILES string.
-            - Uses the MoLFormer-XL model to generate an embedding for the molecule.
-            - Extracts statistical features from the embedding (mean, standard deviation, norm).
-            - Checks for structural toxicity alerts and PAINS patterns.
-            - Assesses aromatic ring count as a toxicity indicator.
-            - Combines all features into a final toxicity score using weighted contributions.
-            - If the model fails, falls back to a structural alerts-based estimation.
-        Raises:
-            Any exception encountered during model inference is caught, and a fallback method is used.
+        Predicts toxicity using cached MoLFormer-XL model
         """
         if not mol:
             return 1.0
         
         try:
             smiles = Chem.MolToSmiles(mol)
-            #print(f"Analyzing toxicity for SMILES: {smiles}")
+            def load_molformer():
+                model = AutoModel.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
+                                                deterministic_eval=True, 
+                                                trust_remote_code=True)
+                tokenizer = AutoTokenizer.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
+                                                        trust_remote_code=True)
+                return tokenizer, model
             
-            model = AutoModel.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
-                                            deterministic_eval=True, 
-                                            trust_remote_code=True)
-            tokenizer = AutoTokenizer.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
-                                                    trust_remote_code=True)
+            tokenizer, model = _get_cached_model("molformer", load_molformer)
             
             inputs = tokenizer(smiles, padding=True, return_tensors="pt")
             with torch.no_grad():
@@ -200,18 +187,14 @@ class DrugOptimizer:
             mol_embedding = outputs.pooler_output.squeeze().numpy()
             
             # Process the embedding to create a toxicity score
-            # 1. Calculate simple statistics from the embedding
-            embedding_norm = np.linalg.norm(mol_embedding)  # Magnitude of vector
-            embedding_mean = np.mean(mol_embedding)         # Mean of features
-            embedding_std = np.std(mol_embedding)           # Standard deviation
+            embedding_norm = np.linalg.norm(mol_embedding)
+            embedding_mean = np.mean(mol_embedding)
+            embedding_std = np.std(mol_embedding)
             
-            # 2. Check for structural alerts (using your existing method)
             alerts = self._check_toxicity_alerts(mol)
-            
-            # 3. Check for PAINS patterns
             pains_score = self._check_pains_patterns(mol)
             
-            # 4. Check for high aromatic ring count
+            # Check for high aromatic ring count
             ring_info = mol.GetRingInfo()
             ring_count = ring_info.NumRings()
             aromatic_rings = 0
@@ -219,66 +202,46 @@ class DrugOptimizer:
                 if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
                     aromatic_rings += 1
             
-            aromatic_score = min(aromatic_rings / 3.0, 1.0)  # Normalize, cap at 1.0
+            aromatic_score = min(aromatic_rings / 3.0, 1.0)
             
-            # 5. Combine embedding features to create a toxicity indicator
             embedding_toxicity_contribution = (
-                0.2 * abs(embedding_mean) +         # General intensity 
-                0.3 * embedding_std +               # Feature diversity
-                0.1 * (embedding_norm / 10.0)       # Overall magnitude (normalized)
+                0.2 * abs(embedding_mean) +
+                0.3 * embedding_std +
+                0.1 * (embedding_norm / 10.0)
             )
             
-            # Apply sigmoid function to normalize to 0-1 range
             embedding_toxicity_score = 1.0 / (1.0 + np.exp(-embedding_toxicity_contribution))
-            #print(f"Embedding-based toxicity: {embedding_toxicity_score:.4f}")
             
-            # 6. Combine all scores: structural alerts, PAINS, ring count, and embeddings
             toxicity_score = (
-                0.4 * min(alerts / 3.0, 1.0) +      # Structural alerts contribution
-                0.2 * pains_score +                 # PAINS patterns contribution
-                0.1 * aromatic_score +              # Aromatic ring count contribution
-                0.3 * embedding_toxicity_score      # Embedding-based contribution
+                0.4 * min(alerts / 3.0, 1.0) +
+                0.2 * pains_score +
+                0.1 * aromatic_score +
+                0.3 * embedding_toxicity_score
             )
             
-            #print(f"Final toxicity score: {toxicity_score:.4f}")
             return min(1.0, max(0.0, toxicity_score))
             
         except Exception as e:
             print(f"Error in toxicity prediction with MoLFormer: {str(e)}")
-            print("Falling back to structural alerts method")
             return self._fallback_toxicity_estimate(mol)
 
     def _check_pains_patterns(self, mol) -> float:
-        """
-        Analyzes a molecule for the presence of PAINS (Pan Assay Interference Compounds) patterns.
-        Parameters:
-            mol: rdkit.Chem.Mol
-                The molecule to be analyzed.
-        Returns:
-            float:
-                A score between 0 and 1 indicating the prevalence of problematic PAINS patterns.
-                A higher score means more PAINS patterns were detected (capped at 3 patterns).
-                Returns 0.0 if no patterns are found or if an error occurs.
-        Notes:
-            - Utilizes RDKit's FilterCatalog with the PAINS filter set.
-            - If an error occurs during processing, the function prints the error and returns 0.0.
-        """
+        """Check PAINS patterns with caching"""
         try:
             from rdkit.Chem import FilterCatalog
-            params = FilterCatalog.FilterCatalogParams()
-            params.AddCatalog(FilterCatalog.FilterCatalogParams.FilterCatalogs.PAINS)
-            catalog = FilterCatalog.FilterCatalog(params)
+            
+            # Cache the catalog creation
+            def load_pains_catalog():
+                params = FilterCatalog.FilterCatalogParams()
+                params.AddCatalog(FilterCatalog.FilterCatalogParams.FilterCatalogs.PAINS)
+                return FilterCatalog.FilterCatalog(params)
+            
+            catalog = _get_cached_model("pains_catalog", load_pains_catalog)
             
             entry = catalog.GetFirstMatch(mol)
             if entry:
                 matches = catalog.GetMatches(mol)
                 num_matches = len(matches)
-                
-                # Extract pattern IDs for reporting
-                pattern_ids = [match.GetDescription() for match in matches]
-                #print(f"PAINS patterns found: {pattern_ids}")
-                
-                # Return normalized score - cap at 3 patterns
                 return min(num_matches / 3.0, 1.0)
             else:
                 return 0.0
@@ -678,25 +641,30 @@ class DrugOptimizer:
             List[str]: A list of valid, unique SMILES strings representing molecular modifications of the input.
         """
         try:
-            tokenizer = PreTrainedTokenizerFast.from_pretrained("jonghyunlee/MolGPT_pretrained-by-ZINC15")
-            tokenizer.pad_token = "<pad>"
-            tokenizer.bos_token = "<bos>"
-            tokenizer.eos_token = "<eos>"
-            model = GPT2LMHeadModel.from_pretrained("jonghyunlee/MolGPT_pretrained-by-ZINC15")
+            # Use cached model loading
+            def load_molgpt():
+                tokenizer = PreTrainedTokenizerFast.from_pretrained("jonghyunlee/MolGPT_pretrained-by-ZINC15")
+                tokenizer.pad_token = "<pad>"
+                tokenizer.bos_token = "<bos>"
+                tokenizer.eos_token = "<eos>"
+                model = GPT2LMHeadModel.from_pretrained("jonghyunlee/MolGPT_pretrained-by-ZINC15")
+                return tokenizer, model
+            
+            tokenizer, model = _get_cached_model("molgpt", load_molgpt)
 
-            inputs = torch.tensor([tokenizer.bos_token_id]).unsqueeze(0)  # Start with <bos> token
+            inputs = torch.tensor([tokenizer.bos_token_id]).unsqueeze(0)
             temperature = 1.5
             outputs = model.generate(
-                    input_ids=inputs,
-                    max_length=128,
-                    num_return_sequences=num_variants,
-                    pad_token_id=tokenizer.pad_token_id,
-                    bos_token_id=tokenizer.bos_token_id,
-                    eos_token_id=tokenizer.eos_token_id,
-                    do_sample=True,  
-                    temperature=temperature,  
-                    return_dict_in_generate=True,
-                )
+                input_ids=inputs,
+                max_length=128,
+                num_return_sequences=num_variants,
+                pad_token_id=tokenizer.pad_token_id,
+                bos_token_id=tokenizer.bos_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                do_sample=True,  
+                temperature=temperature,  
+                return_dict_in_generate=True,
+            )
     
             generated_smiles = [tokenizer.decode(output, skip_special_tokens=True) for output in outputs.sequences]
 

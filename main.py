@@ -26,6 +26,64 @@ CORS(app, resources={r"/api/*": {
 
 MODEL_PATH = os.environ.get('MODEL_PATH', Path(__file__).parent / "rnn_model.pth")
 
+# Global variables to store the loaded models
+vae_model = None
+protein_encoder = None
+vae_encoder = None
+vocab_data = None
+device = None
+fallback_rnn_model = None
+char_to_idx = None
+idx_to_char = None
+
+
+def load_models():
+    """Load all models once at startup"""
+    global vae_model, protein_encoder, vae_encoder, vocab_data, device, fallback_rnn_model, char_to_idx, idx_to_char
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    
+    try:
+        VAE_MODEL_PATH = os.path.join(
+            Path(__file__).parent, 
+            "VAEwithCondRNN", 
+            "final_model", 
+            "best_model.pt"
+        )
+        
+        print(f"Loading VAE model from: {VAE_MODEL_PATH}")
+        vae_model, protein_encoder, vae_encoder, vocab_data = load_vae_model(
+            VAE_MODEL_PATH, 
+            device, 
+            use_affinity=True,  # Model was trained with affinity
+            embed_dim=192,      # Match training parameters
+            hidden_dim=384,
+            output_dim=384,
+            num_layers=4,
+            latent_dim=64
+        )
+        
+        print("VAE + Conditional RNN model loaded successfully")
+        
+    except Exception as e:
+        print(f"Error loading VAE model: {str(e)}")
+        print("Loading fallback RNN model...")
+        try:
+            char_to_idx, idx_to_char = return_vocabulary()
+            fallback_rnn_model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
+            fallback_rnn_model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+            fallback_rnn_model.to(device)
+            print("Fallback RNN model loaded successfully")
+            
+        except Exception as e2:
+            print(f"Error loading fallback RNN model: {str(e2)}")
+            raise Exception("Failed to load any model")
+
+print("Starting model loading...")
+load_models()
+print("Model loading complete")
+
 @app.route("/api/protein/<pdb_id>", methods=["GET"])
 def get_protein_visualization(pdb_id):
     """
@@ -124,6 +182,8 @@ def find_optimized_candidates():
     JSON with optimized compounds, explanations, and optional visualizations
   """
   
+  global vae_model, protein_encoder, vae_encoder, vocab_data, device, fallback_rnn_model, char_to_idx, idx_to_char
+  
   if not request.json:
     return jsonify({"error": "Missing input data"}), 400
   
@@ -154,172 +214,91 @@ def find_optimized_candidates():
   except Exception as e:
       return jsonify({"error": f"Failed to fetch sequence for PDB ID {pdb_id}: {str(e)}"}), 400
 
-  # Load the new VAE + Conditional RNN model
-  try:
-        # Use the trained model path with exact parameters
-        VAE_MODEL_PATH = os.path.join(
-            Path(__file__).parent, 
-            "VAEwithCondRNN", 
-            "final_model", 
-            "best_model.pt"
-        )
-        
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Loading VAE model from: {VAE_MODEL_PATH}")
-        
-        # Load the model with training parameters
-        model, protein_encoder, vae_encoder, vocab_data = load_vae_model(
-            VAE_MODEL_PATH, 
-            device, 
-            use_affinity=True,  # Model was trained with affinity
-            embed_dim=192,      # Match training parameters
-            hidden_dim=384,
-            output_dim=384,
-            num_layers=4,
-            latent_dim=64
-        )
-        
-        # Generate molecules at the requested affinity only
-        diverse_molecules = []
-        
-        print(f"Generating {molecules_per_level} molecules at affinity {binding_affinity}")
-        
-        molecules = generate_vae_molecules(
-            model,
-            protein_encoder,
-            vae_encoder,
-            protein_sequence,
-            vocab_data,
-            affinity_value=binding_affinity,
-            num_molecules=molecules_per_level,
-            device=device,
-            temperature=0.8,
-            max_attempts=3,
-            latent_noise=0.3
-        )
-        diverse_molecules.extend(molecules)
-        
-        print(f"Generated {len(diverse_molecules)} initial molecules with VAE + Conditional RNN")
-        
-        # If we didn't get enough molecules, generate more with higher temperature
-        if len(diverse_molecules) < molecules_per_level * 0.8:
-            additional_needed = molecules_per_level - len(diverse_molecules)
-            print(f"Generating {additional_needed} additional molecules with higher temperature...")
-            additional_molecules = generate_vae_molecules(
-                model,
-                protein_encoder,
-                vae_encoder,
-                protein_sequence,
-                vocab_data,
-                affinity_value=binding_affinity,
-                num_molecules=additional_needed,
-                device=device,
-                temperature=1.1,  # Higher temperature for more diversity
-                max_attempts=5,
-                latent_noise=0.5
-            )
-            diverse_molecules.extend(additional_molecules)
-        
-  except Exception as e:
-    import traceback
-    traceback.print_exc()
-    print(f"Error using VAE + Conditional RNN: {str(e)}. Falling back to basic RNN generator.")
-    
-    # Final fallback to basic RNN model
-    char_to_idx, idx_to_char = return_vocabulary()
-    device = torch.device("cpu")
-    model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
-    model.to(device)
-    diverse_molecules = generate_diverse_molecules(
-        model, 
-        char_to_idx, 
-        idx_to_char, 
-        device, 
-        start_token="C", 
-        num_molecules=molecules_per_level
-    )
-    # Fall back to the original Conditional RNN model
-    """try:
-        COND_RNN_MODEL_PATH = os.environ.get('COND_RNN_MODEL_PATH', 
-                                           Path(__file__).parent / "CondRNN/models_550k/best_model.pt")
-        
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model, protein_encoder, vocab_data = load_cond_rnn_model(COND_RNN_MODEL_PATH, device)
-        
-        # Generate molecules with the original model
-        diverse_molecules = []
-        
-        # Primary generation at requested affinity (60% of molecules)
-        molecules = generate_molecules(
-            model,
-            protein_encoder,
-            protein_sequence,
-            vocab_data,
-            affinity_value=binding_affinity,
-            num_molecules=int(molecules_per_level * 0.6),
-            device=device,
-            temperature=0.75,
-            max_attempts=5
-        )
-        diverse_molecules.extend(molecules)
-        
-        # Generate some molecules at higher and lower affinities for diversity (20% each)
-        lower_affinity = max(0.1, binding_affinity - 0.2)
-        higher_affinity = min(0.95, binding_affinity + 0.2)
-        
-        for affinity in [lower_affinity, higher_affinity]:
-            molecules = generate_molecules(
-                model,
-                protein_encoder,
-                protein_sequence,
-                vocab_data,
-                affinity_value=affinity,
-                num_molecules=int(molecules_per_level * 0.2),
-                device=device,
-                temperature=0.75,
-                max_attempts=5
-            )
-            diverse_molecules.extend(molecules)
-            
-        print(f"Generated {len(diverse_molecules)} initial molecules with original Conditional RNN")
-        
-    except Exception as e2:
-        import traceback
-        traceback.print_exc()
-        # Final fallback to basic RNN model
-        print(f"Error using Conditional RNN: {str(e2)}. Falling back to basic RNN generator.")
-        char_to_idx, idx_to_char = return_vocabulary()
-        device = torch.device("cpu")
-        model = RNNGenerator(vocab_size=len(char_to_idx), embed_dim=128, hidden_dim=256)
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
-        model.to(device)
-        diverse_molecules = generate_diverse_molecules(
-            model, 
-            char_to_idx, 
-            idx_to_char, 
-            device, 
-            start_token="C", 
-            num_molecules=molecules_per_level
-        )"""
-
-  optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
-  weights = request.json['weights']
+  # Use the pre-loaded models
+  diverse_molecules = []
   
-  # Process all generated molecules instead of limiting to top_n
+  if vae_model is not None:
+      try:
+          print(f"Generating {molecules_per_level} molecules at affinity {binding_affinity} using VAE model")
+          
+          molecules = generate_vae_molecules(
+              vae_model,
+              protein_encoder,
+              vae_encoder,
+              protein_sequence,
+              vocab_data,
+              affinity_value=binding_affinity,
+              num_molecules=molecules_per_level,
+              device=device,
+              temperature=0.8,
+              max_attempts=3,
+              latent_noise=0.3
+          )
+          diverse_molecules.extend(molecules)
+          
+          print(f"Generated {len(diverse_molecules)} initial molecules with VAE + Conditional RNN")
+          
+          # If we didn't get enough molecules, generate more with higher temperature
+          if len(diverse_molecules) < molecules_per_level * 0.8:
+              additional_needed = molecules_per_level - len(diverse_molecules)
+              print(f"Generating {additional_needed} additional molecules with higher temperature...")
+              additional_molecules = generate_vae_molecules(
+                  vae_model,
+                  protein_encoder,
+                  vae_encoder,
+                  protein_sequence,
+                  vocab_data,
+                  affinity_value=binding_affinity,
+                  num_molecules=additional_needed,
+                  device=device,
+                  temperature=1.1,  # Higher temperature for more diversity
+                  max_attempts=5,
+                  latent_noise=0.5
+              )
+              diverse_molecules.extend(additional_molecules)
+          
+      except Exception as e:
+          print(f"Error using VAE model during generation: {str(e)}")
+          diverse_molecules = []
+  
+  # Fallback to RNN model if VAE failed or not available
+  if len(diverse_molecules) == 0:
+      print("Using fallback RNN model")
+      if fallback_rnn_model is not None and char_to_idx is not None and idx_to_char is not None:
+          diverse_molecules = generate_diverse_molecules(
+              fallback_rnn_model, 
+              char_to_idx, 
+              idx_to_char, 
+              device, 
+              start_token="C", 
+              num_molecules=molecules_per_level
+          )
+      else:
+          return jsonify({"error": "No models available for molecule generation"}), 500
+
+  main_optimizer = DrugOptimizer(diverse_molecules, protein_sequence, pdb_id)
+  weights = request.json['weights']
+  max_compounds_to_optimize = min(
+    len(diverse_molecules),
+    max(100, num_compounds * 8),
+    20 + num_compounds
+  )
+  
+  molecules_to_optimize = diverse_molecules[:max_compounds_to_optimize]
+  
   optimization_params = {
         'weights': weights,
-        'top_n': len(diverse_molecules)  # Process all molecules
+        'top_n': len(molecules_to_optimize)  
     }
-  print(f"Optimizing {len(diverse_molecules)} molecules...")
-  optimized_compounds = optimizer.optimize(optimization_params)
   
-  # Generate variants for ALL optimized compounds, not just the top ones
+  print(f"Optimizing top {len(molecules_to_optimize)} molecules...")
+  optimized_compounds = main_optimizer.optimize(optimization_params)
+  
   print(f"Generating variants for {len(optimized_compounds)} compounds...")
   all_compounds_with_variants = []
   
+  # Batch process variants instead of one by one
   for i, compound in enumerate(optimized_compounds):
-    # Add the original compound
     all_compounds_with_variants.append({
         **compound,
         'type': 'primary',
@@ -327,23 +306,20 @@ def find_optimized_candidates():
         'variant_of': None
     })
     
-    # Generate variants for this specific compound
     try:
-        variants, _ = get_optimized_variants(
-            protein_sequence, 
-            [compound],  # Pass single compound
-            optimizer, 
-            optimization_params
-        )
+        variants = main_optimizer.generate_molecular_modifications(compound['smiles'], 10)
         
-        # Add all variants with proper tracking
-        for variant in variants:
-            all_compounds_with_variants.append({
-                **variant,
-                'type': 'variant',
-                'parent_index': i,
-                'variant_of': compound['smiles']
-            })
+        if variants:
+            variant_optimizer = DrugOptimizer(variants, protein_sequence, pdb_id)
+            variant_results = variant_optimizer.optimize(optimization_params)
+            
+            for variant in variant_results:
+                all_compounds_with_variants.append({
+                    **variant,
+                    'type': 'variant',
+                    'parent_index': i,
+                    'variant_of': compound['smiles']
+                })
             
     except Exception as e:
         print(f"Error generating variants for compound {i}: {str(e)}")
@@ -353,31 +329,22 @@ def find_optimized_candidates():
   
   # Sort ALL compounds (primary + variants) by their overall score
   all_compounds_with_variants.sort(key=lambda x: x['score'], reverse=True)
-  
-  # Select only the top N compounds as requested
   top_compounds = all_compounds_with_variants[:num_compounds]
-  
-  # Add ranking and requested affinity to final selection
   for i, compound in enumerate(top_compounds):
     compound['rank'] = i + 1
     compound['requested_affinity'] = binding_affinity
-    
-    # Add some analytics
     compound['total_candidates_evaluated'] = len(all_compounds_with_variants)
     compound['selection_percentile'] = round((1 - i / len(all_compounds_with_variants)) * 100, 2)
   
   print(f"Selected top {len(top_compounds)} compounds from {len(all_compounds_with_variants)} total candidates")
   
-  # Export results
-  optimizer.export_results(top_compounds, "top_compounds.csv")
-  
-  # Generate explanations for the selected compounds
+  main_optimizer.export_results(top_compounds, "top_compounds.csv")
   compound_explanations = {}
   for i, compound in enumerate(top_compounds):
-    explanation = optimizer.explain_single_compound(compound)
+    explanation = main_optimizer.explain_single_compound(compound)
     compound_explanations[f"compound_{i+1}"] = explanation
   
-  overall_explanation = optimizer.explain_results_with_gemini(top_compounds[:min(3, len(top_compounds))])
+  overall_explanation = main_optimizer.explain_results_with_gemini(top_compounds[:min(3, len(top_compounds))])
   
   df = pd.read_csv("top_compounds.csv")
   serialized_compounds = df.to_json(orient="records")
@@ -386,8 +353,9 @@ def find_optimized_candidates():
   if generate_visualizations:
     visualize_simple(top_compounds, show_protein=True, pdb_id=pdb_id)
     visualization_data = get_compound_files("compound_visualizations")
+
+  model_used = "VAE + Conditional RNN" if vae_model is not None else "Fallback RNN"
   
-  # Enhanced response with more analytics
   response = {
     "optimized_compounds": serialized_compounds,
     "explanation": overall_explanation,
@@ -397,7 +365,9 @@ def find_optimized_candidates():
         "binding_affinity": binding_affinity
     },
     "optimization_stats": {
+        "model_used": model_used,
         "total_molecules_generated": len(diverse_molecules),
+        "molecules_selected_for_optimization": len(molecules_to_optimize),
         "total_candidates_evaluated": len(all_compounds_with_variants),
         "primary_compounds": len([c for c in all_compounds_with_variants if c['type'] == 'primary']),
         "variant_compounds": len([c for c in all_compounds_with_variants if c['type'] == 'variant']),
@@ -411,6 +381,21 @@ def find_optimized_candidates():
   
   return jsonify(response)
 
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    """Health check endpoint to verify model loading status"""
+    global vae_model, fallback_rnn_model
+    
+    status = {
+        "status": "healthy",
+        "models_loaded": {
+            "vae_model": vae_model is not None,
+            "fallback_rnn": fallback_rnn_model is not None
+        },
+        "device": str(device) if device else "unknown"
+    }
+    
+    return jsonify(status)
 
 @app.route('/', methods=['GET'])
 def index():
