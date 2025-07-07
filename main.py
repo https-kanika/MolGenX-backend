@@ -309,7 +309,7 @@ def find_optimized_candidates():
   # Process all generated molecules instead of limiting to top_n
   optimization_params = {
         'weights': weights,
-        'top_n': (diverse_molecules)  # Process all molecules
+        'top_n': len(diverse_molecules)  # Process all molecules
     }
   print(f"Optimizing {len(diverse_molecules)} molecules...")
   optimized_compounds = optimizer.optimize(optimization_params)
