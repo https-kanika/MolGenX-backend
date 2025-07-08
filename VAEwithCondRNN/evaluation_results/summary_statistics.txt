@@ -1,0 +1,28 @@
+MOLECULAR PROPERTY SUMMARY STATISTICS
+============================================================
+
+Basic Statistics:
+            QED      LogP  Molecular_Weight      TPSA       HBA       HBD  Rotatable_Bonds  Aromatic_Rings  Heavy_Atoms     Rings  Formal_Charge  Lipinski_Violations
+count  1000.000  1000.000          1000.000  1000.000  1000.000  1000.000         1000.000        1000.000     1000.000  1000.000       1000.000             1000.000
+mean      0.711     3.114           358.355    85.355     5.365     1.673            4.596           2.436       24.462     2.878          0.006                0.064
+std       0.095     1.260            28.759    24.590     1.671     0.905            1.852           0.732        1.914     0.763          0.077                0.245
+min       0.415    -2.260           239.339     6.480     1.000     0.000            0.000           0.000       17.000     0.000          0.000                0.000
+25%       0.640     2.307           341.319    69.605     4.000     1.000            3.000           2.000       23.000     2.000          0.000                0.000
+50%       0.713     3.132           359.286    84.340     5.000     2.000            4.000           2.000       25.000     3.000          0.000                0.000
+75%       0.778     4.040           376.808   101.290     7.000     2.000            6.000           3.000       26.000     3.000          0.000                0.000
+max       0.936     6.310           442.697   158.130    10.000     5.000           12.000           4.000       30.000     5.000          1.000                1.000
+
+Drug-likeness Analysis:
+Total molecules analyzed: 1000
+Drug-like molecules (QED >= 0.5): 994 (99.4%)
+Lipinski-compliant molecules: 936 (93.6%)
+Mean QED score: 0.711 +/- 0.095
+Mean LogP: 3.11 +/- 1.26
+Mean Molecular Weight: 358.4 +/- 28.8 Da
+Mean TPSA: 85.4 +/- 24.6 A^2
+
+Property Ranges:
+QED range: 0.415 - 0.936
+LogP range: -2.26 - 6.31
+MW range: 239.3 - 442.7 Da
+TPSA range: 6.5 - 158.1 A^2
