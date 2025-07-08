@@ -5,7 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import QED
 import os
-from .cycle import ProteinEncoder, ConditionalRNNGenerator, ProteinVAEEncoder, generate_molecules
+from cycle import ProteinEncoder, ConditionalRNNGenerator, ProteinVAEEncoder, generate_molecules
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
